@@ -101,6 +101,19 @@ bucket y MetPy cambian por su cuenta.
 - Las ventanas de los cinco casos preparados, elegidas midiendo el eco y no la hora de
   recalada. Harvey estaba en el día equivocado.
 
+Y leyendo el fuente del CODE (`src/cpc102/tsk060/` y `tsk066/`), tres respuestas más que
+estaban anotadas como incógnitas de F0:
+
+- `nbtcp` **no** escribe el encabezado WMO salvo con `-A`, y `-A` además suprime la pregunta de
+  la convención de nombres. Con `-b` se va a segundo plano y deja de leer el terminal. La única
+  entrada que queda se lee con `scanf`.
+- La RPS list se lee con anchos fijos y una línea corta se trata como fin de fichero, sin
+  error.
+- `play_a2` no descarta radiales por ir rápido, `-T` significa "simula también el hueco entre
+  volúmenes" y existe `-m`, máxima velocidad con control de flujo del RPG.
+
+Todo eso dice qué *debería* pasar. Lo que pasa lo dice F0.
+
 ## Lo que falta y necesita el contenedor
 
 Esta parte no se ha ejecutado: la sesión que preparó lo de arriba no tenía acceso al demonio de
@@ -111,13 +124,13 @@ Docker. El orden es el de `docs/implementacion/fases.md`.
 2. **`change_radar -r kamx -S -R` y `mrpg -p -v startup`.** Comprobar en el producto que
    `lat`/`lon` salen los del sitio pedido y no los del anterior: `f0/wmo_probe.py` imprime
    `lat`/`lon` de cualquier producto, y ese es el chequeo.
-3. **`nbtcp` sin terminal interactiva.** Es la puerta que puede matar el diseño. Pide el nombre
-   de la RPS list, la convención de nombres (1–6) y se queda en un menú. Probar con un wrapper
-   por stdin; si no basta, el plan B es leer el product LB del ORPG.
+3. **`nbtcp -A -b` sin terminal interactiva**, con el nombre de la RPS list por stdin. El
+   fuente dice que basta; falta verlo. Si no, el plan B es leer el product LB del ORPG.
 4. **RPS list recortada a los diez productos** que el pipeline sabe leer: 153, 154, 135, 134,
    170, 173, 172, 58, 141, 48 (ver [contrato](../docs/referencia/contrato-pipeline.md)). Se
    deriva del `master_rps_list.dat` que `nbtcp` regenera al arrancar.
-5. **`play_a2 -T -p playlist`** con la playlist que escribe `catalogo.py fetch`.
+5. **`play_a2 -p playlist`** con la playlist que escribe `catalogo.py fetch`, y después los
+   tres modos de velocidad (`-T`, sin `-T`, `-m`) comparados con `equivalencia.py`.
 6. **`l3proc process`** sobre lo que escriba `nbtcp`. Aquí se ve si el encabezado WMO está o no.
 7. **Encadenar dos sitios distintos** con `mrpg -p startup` en medio y comprobar que no se cuela
    ningún producto del primero.
