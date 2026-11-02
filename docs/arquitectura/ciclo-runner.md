@@ -72,16 +72,24 @@ producto cuyo `vol_time` caiga fuera de la ventana del job.
 ## 5. Abrir la salida de productos
 
 ```
-nbtcp -p 4491 -s <ICAO> -d /data/products/<job> -w <passwd> <host>
+echo rps_lamula.list | nbtcp -A -b -D /data/products/<job> -s <ICAO> -p 4491 -w <passwd> <host>
 ```
 
 `nbtcp` simula un usuario Class 1 y escribe los productos crudos a ese directorio. Requiere
 configuración horneada en la imagen: línea LN=1 con `cm_tcp` en `comms_link.conf`, el enlace
 renumerado en `tcp.conf`, y `service_class_table` si se piden más de 160 productos.
 
-**Es interactivo.** Pide el fichero de RPS list, pide la convención de nombres (1–6) y se queda
-en un menú. El runner lo guía por stdin y mantiene el descriptor abierto. Plan B si resulta
-infumable: leer el product LB del ORPG directamente.
+Es interactivo, pero menos de lo que parecía. Leído el fuente el 2026-11-02 (detalle en
+[Hechos verificados del ORPG](../referencia/orpg-hechos.md)):
+
+- `-A` añade el encabezado WMO —que el pipeline necesita— y además **suprime la pregunta de la
+  convención de nombres**.
+- `-b` lo manda a segundo plano después de conectar, y deja de leer el terminal.
+- La única entrada que queda es el nombre de la RPS list, leída con `scanf`. Un `echo` basta.
+- `-D` vacía el directorio al arrancar, que es el cinturón de aislamiento entre jobs.
+
+Queda ejecutarlo: el fuente dice qué debería pasar, F0 dice qué pasa. Plan B si no: leer el
+product LB del ORPG directamente.
 
 La RPS list se genera una vez a partir de `master_rps_list.dat` y se hornea en la imagen. Debe
 pedir exactamente los productos que el pipeline sabe decodificar: 153 N0B, 154 N0G, 135 EET,

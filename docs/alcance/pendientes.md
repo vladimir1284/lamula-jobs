@@ -4,13 +4,16 @@ Huecos abiertos, ordenados por lo que bloquean.
 
 ## Bloqueantes de F0
 
-- **Encabezado WMO en la salida de `nbtcp`.** Verificado el 2026-11-02: si `nbtcp` escribe el
-  producto pelado, `l3proc process` muere con `AttributeError` en `siteID` antes de publicar
-  nada, porque el pipeline saca el identificador del radar **solo** de ese encabezado. Lo que
-  falta por saber es qué escribe `nbtcp` de verdad; el arreglo, si hace falta, es pequeño y
-  está descrito en [Contrato con el pipeline](../referencia/contrato-pipeline.md).
-- **Automatizar `nbtcp`.** Interactivo por diseño. Hay que comprobar que un wrapper por stdin
-  basta, o pasar al plan B (leer el product LB del ORPG).
+- **Encabezado WMO en la salida de `nbtcp`.** Resuelto en el fuente el 2026-11-02: `nbtcp`
+  escribe el producto pelado **salvo que se le pase `-A`**, y sin encabezado `l3proc process`
+  muere con `AttributeError` en `siteID` antes de publicar nada. Queda una decisión de
+  producto, no técnica: `-A` pone el enrutado de la oficina real del NWS. Ver
+  [Contrato con el pipeline](../referencia/contrato-pipeline.md).
+- **Automatizar `nbtcp`.** Casi resuelto en el fuente: con `-A` desaparece la pregunta de la
+  convención de nombres, con `-b` el programa se va a segundo plano y deja de leer el terminal,
+  y la única entrada que queda —el nombre de la RPS list— se lee con `scanf`, así que un
+  `echo` por delante basta. **Falta ejecutarlo**: que compile así no garantiza que se comporte
+  así. El plan B (leer el product LB) sigue en pie, pero ha bajado mucho de probabilidad.
 - **Aislamiento entre jobs.** Comprobar que `mrpg -p startup` no deja rastro del job anterior.
   Un producto filtrado es un fallo silencioso.
 - **Decodificación de la salida de `nbtcp`.** Corregido el 2026-11-02 un error de esta

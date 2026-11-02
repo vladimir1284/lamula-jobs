@@ -61,6 +61,19 @@ Puntos de uso, los tres idénticos:
 - `ingest/phenomena/parse.py:236`
 - `ingest/phenomena/vwp.py:68`
 
+### Lo que hace `nbtcp` de verdad
+
+Leído el fuente el 2026-11-02 (`src/cpc102/tsk060/`): `nbtcp` **no añade el encabezado salvo
+que se le pase `-A`**, y con `-A` añade exactamente 30 bytes, los mismos que traen los ficheros
+del bucket. O sea, la predicción de arriba se confirma en las dos direcciones: sin `-A` el
+pipeline revienta, con `-A` funciona sin tocar nada.
+
+Eso convierte esto en una decisión de producto en vez de en un problema técnico. El campo de
+oficina de origen del encabezado sale de la tabla de sitios del CODE —`KMFL` para AMX—, así que
+con `-A` los productos del demo llevan el enrutado de una oficina real del Servicio
+Meteorológico Nacional de EEUU. Funciona, es la opción que el programa ofrece, y choca con la
+regla de etiquetado de salida.
+
 ### Opciones, en orden de preferencia
 
 1. **Que el pipeline acepte un `site_id` explícito**, usándolo cuando el encabezado no está. Es
@@ -70,11 +83,14 @@ Puntos de uso, los tres idénticos:
 2. **Derivarlo del `src_id` del encabezado del mensaje.** El producto trae `src_id` en la
    cabecera ICD (728 en el ejemplo de AMX) y `change_radar.dat` fija ese identificador por
    sitio (`rpg_id`). Hay que verificar la correspondencia en F0 antes de fiarse.
-3. **Que el runner anteponga un encabezado WMO sintético.** Funcionaría, y conviene decir en
-   voz alta por qué no se hace: un encabezado `SDUS52 KMFL` es tráfico identificado del NWS.
-   Fabricarlo para productos nuestros choca de frente con la regla de etiquetado de salida de
-   [Pendientes](../alcance/pendientes.md) —los productos del demo no pueden presentarse como
-   oficiales— y ensucia cualquier fichero que el cliente se descargue.
+3. **Arrancar `nbtcp` con `-A`.** Es la opción soportada y resuelve el problema entero sin
+   tocar una línea de código en ningún repo. A cambio, cada producto del demo sale con el
+   enrutado de la oficina real del NWS que le corresponde al radar, que es justo lo que la
+   regla de etiquetado de [Pendientes](../alcance/pendientes.md) no quiere. Sirve de palanca
+   para desatascar F0 —donde nadie de fuera ve nada— y es una conversación aparte para F4.
+
+   Fabricar nosotros el encabezado en el runner tiene el mismo problema y además sin el
+   respaldo de la herramienta. No se contempla.
 
 La decisión no se toma aquí: F0 tiene que mirar primero qué escribe `nbtcp` de verdad. Lo que
 esta página fija es que **si escribe el producto pelado, el pipeline no lo traga hoy**, y que
@@ -111,7 +127,8 @@ producto saldrá con una altura que no es la del radar del cliente.
 
 ## Lo que F0 confirma de este contrato
 
-- [ ] ¿Escribe `nbtcp` el encabezado WMO, o el producto pelado?
+- [x] ¿Escribe `nbtcp` el encabezado WMO, o el producto pelado? **Respondido en el fuente**:
+      pelado salvo que se le pase `-A`.
 - [ ] ¿Coincide `src_id` del producto con el `rpg_id` de `change_radar.dat`?
 - [ ] ¿Sale `lat`/`lon` del producto con lo que puso `change_radar`? (regla de verificación de
       coordenadas de `AGENTS.md`)

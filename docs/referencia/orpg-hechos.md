@@ -68,9 +68,46 @@ Configuración previa, horneable en la imagen:
 4. Los cambios entran con `mrpg -v -p startup`.
 
 **Es interactivo**: al arrancar regenera `master_rps_list.dat` en `CFG_DIR`, pide el nombre de
-la RPS list personalizada, pide la convención de nombres (1–6) y se queda en un menú de nueve
-opciones. La RPS list personalizada se deriva del master quitando la cabecera, sin comentarios
-ni líneas en blanco, con la primera columna correlativa y la alineación intacta.
+la RPS list personalizada, pide la convención de nombres (1–7) y se queda en un menú. La RPS
+list personalizada se deriva del master quitando la cabecera, sin comentarios ni líneas en
+blanco, con la primera columna correlativa y la alineación intacta.
+
+### Cómo se automatiza, leído del fuente (2026-11-02)
+
+Leído en `src/cpc102/tsk060/` del tarball `rpg_b24_0r1_20_pub_src.tgz`. Tres opciones que la
+página de ayuda del propio programa lista y que cambian el panorama:
+
+| Opción | Qué hace |
+|---|---|
+| `-A` | Añade el encabezado WMO/AWIPS a cada producto. **Por defecto no lo añade.** |
+| `-C` | País de origen para ese encabezado (por defecto, EEUU). |
+| `-b` | Manda `nbtcp` a segundo plano. Solo con TCP e interfaz nativa. |
+| `-D` | Como `-d`, pero vacía el directorio al empezar. |
+| `-R` | Borra productos de más de X minutos. |
+| `-i` | Con `-d`, no guarda productos de código menor que 16. |
+
+Y el detalle que de verdad desatasca: en `nbtcp.c`, la pregunta de la convención de nombres
+**solo se hace cuando no se ha pedido el encabezado**. Con `-A`, el programa fija la convención
+8 —derivada del propio encabezado— y no pregunta nada.
+
+Queda una sola entrada interactiva: el nombre del fichero de RPS list, que se lee con un
+`scanf` de la entrada estándar y **no** se salta con `-n` (esa opción solo evita mandar la
+lista al conectar). Un `echo` o un here-string basta.
+
+Con `-b`, después de conectar el programa deja de leer el terminal, así que no hay menú que
+atender.
+
+Receta que resulta de todo esto, para probar en F0:
+
+```bash
+echo rps_lamula.list | nbtcp -A -b -d /data/products/<job> -s <ICAO> -p 4491 -w <clave> <host>
+```
+
+El encabezado que añade `-A` mide **30 bytes** (`WMO_HEADER_SIZE` en `nbtcp.h`), que es
+exactamente lo que miden los del bucket de Unidata, y su campo de oficina de origen sale de la
+tabla de sitios del propio CODE: para AMX, `KMFL`. Es decir, con `-A` los productos del demo
+salen con el enrutado de la oficina real del NWS. Hay que decidirlo a propósito, no por
+defecto: ver [Contrato con el pipeline](contrato-pipeline.md).
 
 `mon_nb 1` monitoriza el enlace; los errores van a `nbtcp.log.<puerto>` en el directorio de
 trabajo.

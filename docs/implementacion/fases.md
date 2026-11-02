@@ -9,14 +9,18 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
 `unidata-nexrad-level2`.
 
 1. `change_radar` al sitio del volumen, `mrpg -p -v startup`.
-2. `nbtcp` guiado por stdin con una RPS list recortada a los diez productos del pipeline.
+2. `nbtcp -A -b` con una RPS list recortada a los diez productos del pipeline, y el nombre de
+   esa lista por stdin. El porqué de cada opción, leído del fuente, en
+   [Hechos verificados del ORPG](../referencia/orpg-hechos.md).
 3. `play_a2 -T -p playlist` con uno o dos volúmenes.
 4. Decodificar los productos resultantes con `l3proc process`.
 
 **Puertas:**
 
-- `nbtcp` se automatiza sin terminal interactiva. Si no, se evalúa el plan B (leer el product
-  LB) antes de seguir.
+- `nbtcp -A -b` se automatiza sin terminal interactiva. El fuente dice que sí; falta verlo.
+  Si no, se evalúa el plan B (leer el product LB) antes de seguir.
+- Los productos que escribe traen el encabezado WMO de 30 bytes y `l3proc process` los digiere
+  sin cambios. Sin `-A` no, y eso también está comprobado.
 - `mrpg -p startup` deja el ORPG sin rastro del job anterior. Se prueba encadenando dos sitios
   distintos y comprobando que no se cuela ningún producto del primero.
 - MetPy decodifica el fichero de `nbtcp` igual que el del feed de Unidata.
