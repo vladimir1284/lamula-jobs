@@ -116,6 +116,21 @@ Queda una sola entrada interactiva: el nombre del fichero de RPS list, que se le
 `scanf` de la entrada estándar y **no** se salta con `-n` (esa opción solo evita mandar la
 lista al conectar). Un `echo` o un here-string basta.
 
+#### El formato de la RPS list, por qué es quisquilloso
+
+`nbtcp_read_product_list.c` lee cada línea con un `fscanf` de anchos fijos: 4 caracteres de
+número de petición, 5 de código de producto, 5 de mnemónico, **51 leídos como caracteres —no
+como palabra—** para la descripción, y seis parámetros sueltos. Diez campos por línea.
+
+De ahí salen las tres reglas, y ahora con su motivo:
+
+- La **alineación importa de verdad**: la descripción se lee por posición, no por separador.
+- No hay comentarios ni líneas en blanco porque el lector no los contempla.
+- Y la trampa: si una línea da menos de diez campos, el lector **marca fin de fichero**. No da
+  error, no avisa: deja de leer ahí. Una RPS list mal formada en la línea 7 se convierte en
+  una RPS list de seis productos, y el síntoma aparece mucho después, como productos que
+  faltan.
+
 Con `-b`, después de conectar el programa deja de leer el terminal, así que no hay menú que
 atender.
 
@@ -136,7 +151,9 @@ trabajo.
 
 ## Ciclo de vida del ORPG
 
-- `mrpg -p -v startup`: arranca y **limpia todos los data stores**. Unos 10 s hasta
+- `mrpg -p -v startup`: arranca y **limpia todos los data stores** (confirmado en
+  `src/cpc111/tsk001/mrpg_main.c`: `-p` activa el camino de limpieza completa; si el RPG está
+  operativo cuando se pide, antes ejecuta un `rescue_data save`, que cuesta su tiempo). Unos 10 s hasta
   `RPG State: OPERATE` / `RPG Operability Status: ONLINE`. Después, 107 tareas en amd64, 105 en
   arm64.
 - `mrpg shutdown` solo **manda** la orden; las tareas operativas tardan unos 7 s en salir.
