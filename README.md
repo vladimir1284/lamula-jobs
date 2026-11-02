@@ -22,13 +22,19 @@ O leer directamente bajo `docs/`:
 - `docs/arquitectura/ciclo-runner.md` — un job de principio a fin
 - `docs/implementacion/fases.md` — plan de trabajo, empezando por la Fase 0
 - `docs/referencia/orpg-hechos.md` — lo verificado del CODE Guide, para no releer los PDF
+- `docs/referencia/catalogo-verificado.md` — medidas reales del catálogo público
+- `docs/referencia/contrato-pipeline.md` — qué espera el pipeline de la salida del ORPG
 - `docs/referencia/licencia.md` — qué se puede y qué no con el CODE; léelo antes de abrir esto a terceros
 
 ## Estado
 
-**Solo scaffold de documentación.** La Fase 0 no se ha ejecutado: nadie ha automatizado
-todavía `nbtcp` ni ha comprobado que un volumen de AWS recorra la cadena entera. Hasta
-entonces, todo esto es diseño sobre papel.
+**La Fase 0 no se ha ejecutado**: nadie ha automatizado todavía `nbtcp` ni ha comprobado que un
+volumen de AWS recorra la cadena entera, así que el servicio sigue sin escribirse.
+
+Lo que sí hay, en `f0/`, es el instrumental de esa fase y lo que se ha podido responder sin
+contenedor: el catálogo público medido —los cinco casos de huracán, con bytes, cadencia y
+VCP— y la comprobación de que un producto Level III sin encabezado WMO rompe el pipeline.
+Ver `f0/README.md`.
 
 ## Repos hermanos
 

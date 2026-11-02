@@ -19,6 +19,9 @@ La **Fase 0**, a mano, en un contenedor: un volumen real de `unidata-nexrad-leve
 deja automatizar o `mrpg -p startup` no aísla un job del siguiente, el diseño cambia antes de
 escribir el servicio, no después.
 
+El instrumental está en `f0/` y su `README.md` dice qué parte ya está respondida sin contenedor
+y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.py fetch`.
+
 ## Reglas que no se negocian
 
 - **El runner no sabe de dónde vienen los ficheros.** Recibe claves en staging. Meter AWS (o
@@ -49,3 +52,5 @@ escribir el servicio, no después.
 - Documentación en `docs/`, mkdocs-material, español, desplegada a Cloudflare Pages por
   `.github/workflows/docs.yml`.
 - Las decisiones nuevas se añaden a `docs/alcance/decisiones.md` con fecha y motivo.
+- Lo que se mide o se comprueba va a `docs/referencia/` con la fecha de la medida, y el script
+  que lo reproduce a `f0/`. Un número sin forma de repetirlo envejece mal.

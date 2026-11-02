@@ -1,0 +1,80 @@
+# F0 — espiga manual
+
+Instrumental de la Fase 0. **Nada de esto es código del servicio**: son herramientas para medir
+el catálogo, preparar los ficheros de la espiga y dejar evidencia reproducible de lo que se va
+comprobando. El runner, la cola y la API no se escriben hasta que F0 pase (ver `AGENTS.md`).
+
+Todo corre con `uv run`, sin instalar nada: los scripts llevan sus dependencias declaradas en
+la cabecera PEP 723.
+
+## Herramientas
+
+| Script | Para qué |
+|---|---|
+| `catalogo.py` | Listar, medir y descargar del bucket `unidata-nexrad-level2` |
+| `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
+
+### `catalogo.py`
+
+```bash
+# volúmenes de un sitio en un día UTC
+f0/catalogo.py list KAMX 2017-09-10
+
+# cadencia, huecos y VCP de una ventana (una petición Range de 64 KiB por volumen)
+f0/catalogo.py scan KHGX 2017-08-26T00:00 2017-08-26T06:00 --vcp --gaps
+
+# los cinco casos preparados, medidos
+f0/catalogo.py cases --vcp
+
+# parejas Level II / Level III del mismo barrido, para la puerta de equivalencia
+f0/catalogo.py pairs KAMX 2026-11-01 --product N0B
+
+# qué formato ofrece un sitio año por año
+f0/catalogo.py eras KEVX --desde 2010 --hasta 2016
+
+# descargar doce volúmenes y escribir la playlist que come play_a2
+f0/catalogo.py fetch KAMX 2017-09-10T12:00 2017-09-10T18:00 ./vols --max 12
+```
+
+Los resultados ya tomados están en
+[Catálogo verificado](../docs/referencia/catalogo-verificado.md).
+
+## Lo que ya está respondido sin contenedor
+
+- El archivo de `unidata-nexrad-level2` llega hasta **1991**, pero lo seleccionable empieza
+  entre **2012 y 2014 según el radar**: antes está en formatos que D9 excluye. Hasta 2015 el
+  V06 viene envuelto en gzip (`_V06.gz`), y hay V07 suelto en 2013.
+- Las cinco ventanas de huracán medidas: número de volúmenes, bytes, cadencia y VCP.
+- **Harvey cambia de VCP a mitad de ventana** (121 → 212).
+- Irma trae volúmenes parciales y un corte de 10 minutos.
+- Para la puerta de equivalencia sirve cualquier volumen reciente: 302 de 302 volúmenes de KAMX
+  del 2026-11-01 tienen su N0B con el mismo sello de tiempo.
+- Un producto Level III **sin encabezado WMO** rompe el pipeline en `siteID`
+  ([contrato](../docs/referencia/contrato-pipeline.md)).
+
+## Lo que falta y necesita el contenedor
+
+Esta parte no se ha ejecutado: la sesión que preparó lo de arriba no tenía acceso al demonio de
+Docker. El orden es el de `docs/implementacion/fases.md`.
+
+1. **Levantar el ORPG.** `ghcr.io/vladimir1284/orpg:b24`, con `--hostname` fijo (el contenedor
+   escribe `$(hostname)` en `.rssd.conf` en cada arranque).
+2. **`change_radar -r kamx -S -R` y `mrpg -p -v startup`.** Comprobar en el producto que
+   `lat`/`lon` salen los del sitio pedido y no los del anterior: `f0/wmo_probe.py` imprime
+   `lat`/`lon` de cualquier producto, y ese es el chequeo.
+3. **`nbtcp` sin terminal interactiva.** Es la puerta que puede matar el diseño. Pide el nombre
+   de la RPS list, la convención de nombres (1–6) y se queda en un menú. Probar con un wrapper
+   por stdin; si no basta, el plan B es leer el product LB del ORPG.
+4. **RPS list recortada a los diez productos** que el pipeline sabe leer: 153, 154, 135, 134,
+   170, 173, 172, 58, 141, 48 (ver [contrato](../docs/referencia/contrato-pipeline.md)). Se
+   deriva del `master_rps_list.dat` que `nbtcp` regenera al arrancar.
+5. **`play_a2 -T -p playlist`** con la playlist que escribe `catalogo.py fetch`.
+6. **`l3proc process`** sobre lo que escriba `nbtcp`. Aquí se ve si el encabezado WMO está o no.
+7. **Encadenar dos sitios distintos** con `mrpg -p startup` en medio y comprobar que no se cuela
+   ningún producto del primero.
+8. **Medir** lo que pide
+   [Límites y recursos](../docs/operacion/limites-recursos.md): RAM pico, CPU media y pico,
+   retraso del `processor` live, duración real de doce volúmenes, bytes de productos y COGs.
+
+Un apunte de presupuesto antes de empezar: doce volúmenes de huracán son unos 240 MB de
+descarga y, a `-T`, algo más de una hora de reloj.

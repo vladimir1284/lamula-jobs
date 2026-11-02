@@ -6,7 +6,10 @@ El runner solo conoce "claves en staging" (D1). Las fuentes viven en `jobs-api`.
 
 Lo verificado en `lamula-process/src/lib/aws-explorer/`, que se reaprovecha:
 
-- Bucket **`unidata-nexrad-level2`**. No `noaa-nexrad-level2`: ese devuelve 403 al listar.
+- Bucket **`unidata-nexrad-level2`**. No `noaa-nexrad-level2`: ese devuelve 403 al listar
+  —y también al pedir una clave concreta, revisado el 2026-11-02.
+- El archivo llega hasta **1991**, comprobado el 2026-11-02. Los casos de huracán no necesitan
+  ninguna fuente aparte.
 - Distribución de claves: `YYYY/MM/DD/SITE/SITE_YYYYMMDD_HHMMSS_V0x`, una carpeta por día UTC.
 - El sufijo `_V06` filtra lo que el ORPG B24 puede digerir (D9).
 - `src/lib/platform/known-sites.json` trae lat/lon/altM de los sitios US, ocho del IDEAM
@@ -22,9 +25,14 @@ Mapa de sitios, día UTC, lista de volúmenes, selección de un rango consecutiv
 estimada antes de confirmar.
 
 Encima de eso, un menú de **casos preparados** —Irma/KAMX, Harvey/KHGX, Michael/KEVX,
-Ian/KTBW, Milton/KTBW— que rellena sitio y rango de un clic. Para un demo comercial eso vale
-más que el selector libre: el prospecto ve una tormenta reconocible en vez de tener que
-adivinar una fecha con eco.
+Ian/KTBW, Milton/KTBW— que rellena sitio y rango de un clic. Los cinco están medidos en
+[Catálogo verificado](../referencia/catalogo-verificado.md): volúmenes, bytes, cadencia y VCP.
+Dos cosas que salieron de esa medida y afectan al selector: **Harvey cambia de VCP a mitad de
+ventana**, e **Irma trae volúmenes parciales y un corte de diez minutos** —KAMX tenía el
+huracán encima—.
+
+Para un demo comercial el menú vale más que el selector libre: el prospecto ve una tormenta
+reconocible en vez de tener que adivinar una fecha con eco.
 
 ## Fuente 2 — Observaciones propias del cliente (futura)
 

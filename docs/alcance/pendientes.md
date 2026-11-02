@@ -4,13 +4,20 @@ Huecos abiertos, ordenados por lo que bloquean.
 
 ## Bloqueantes de F0
 
+- **Encabezado WMO en la salida de `nbtcp`.** Verificado el 2026-11-02: si `nbtcp` escribe el
+  producto pelado, `l3proc process` muere con `AttributeError` en `siteID` antes de publicar
+  nada, porque el pipeline saca el identificador del radar **solo** de ese encabezado. Lo que
+  falta por saber es qué escribe `nbtcp` de verdad; el arreglo, si hace falta, es pequeño y
+  está descrito en [Contrato con el pipeline](../referencia/contrato-pipeline.md).
 - **Automatizar `nbtcp`.** Interactivo por diseño. Hay que comprobar que un wrapper por stdin
   basta, o pasar al plan B (leer el product LB del ORPG).
 - **Aislamiento entre jobs.** Comprobar que `mrpg -p startup` no deja rastro del job anterior.
   Un producto filtrado es un fallo silencioso.
-- **Decodificación de la salida de `nbtcp`.** El pipeline decodifica ficheros del bucket de
-  Unidata, que no traen cabecera WMO. Hay que confirmar que MetPy traga igual lo que escribe
-  `nbtcp`.
+- **Decodificación de la salida de `nbtcp`.** Corregido el 2026-11-02 un error de esta
+  página: los ficheros del bucket de Unidata **sí** traen cabecera WMO, 30 bytes de texto
+  (`SDUS52 KMFL 010000\r\r\nN0BAMX\r\r\n`). Lo demás del producto decodifica igual con y
+  sin ella; lo único que se pierde es `siteID`, que es justamente lo que el pipeline necesita
+  (punto de arriba).
 - **Velocidad segura de reproducción.** `-T` es lo documentado; falta saber si `-x` mayor que 1
   pierde radiales.
 
@@ -50,16 +57,42 @@ F4, que es cuando entra el primer tercero.
 
 - Dominio del viewer demo y del hostname del bucket.
 - Texto y campos exactos del formulario de solicitud de acceso.
-- Umbral de huecos aceptable entre volúmenes consecutivos de un job.
-- Qué hacer cuando el cliente elige un rango con un cambio de VCP en medio (clear-air a
-  precipitación): ¿se permite, se avisa, se corta?
 - Si el enlace de resultado caduca a la vez que el job o sobrevive un tiempo en solo lectura.
+
+### Umbral de huecos — con datos, falta decidir
+
+Medido el 2026-11-02 (ver [Catálogo verificado](../referencia/catalogo-verificado.md)): la
+ventana de Irma en KAMX tiene un hueco de **10 minutos exactos** y cuatro volúmenes parciales
+seguidos de huecos de 47 a 109 s. Con `play_a2 -T`, un hueco de diez minutos son diez minutos
+de nodo parado, pagados de la cuota del cliente.
+
+Propuesta, para aprobar o tumbar: **cortar el job en el primer hueco mayor de dos veces la
+cadencia mediana de la ventana**, avisando antes de confirmar. Es automático, no necesita saber
+el VCP y se explica en una frase al cliente.
+
+### Cambio de VCP a mitad de ventana — con datos, falta decidir
+
+No es hipotético: **Harvey, uno de los cinco casos preparados, cambia de VCP 121 a VCP 212** a
+las 01:50:52 UTC, hora y media después del comienzo de la ventana. Medido, no supuesto.
+
+Lo que hay que averiguar en F0 es si el ORPG lo absorbe solo —es exactamente lo que le pasa a
+un RPG operativo cuando el operador cambia de patrón— o si hay que cortar. La hipótesis de
+trabajo es que lo absorbe; si es así, no hace falta ni avisar.
+
+### Tope de bytes por job, además del tope de volúmenes
+
+Un volumen de huracán ocupa de 12 a 25 MB; uno de día tranquilo, 5,9 MB. Las cuotas de
+[Acceso y cuotas](../operacion/acceso-y-cuotas.md) están expresadas solo en número de
+volúmenes, así que el mismo nivel `demo` mueve entre 70 MB y 300 MB de staging. Propuesta:
+añadir `max_bytes` a la tabla `tiers` y validarlo al crear el job, que es cuando `jobs-api` ya
+conoce el tamaño de cada clave.
 
 ## Cambios necesarios en repos ajenos
 
 | Repo | Cambio | Tamaño |
 |---|---|---|
 | `nexrad-l3-pipeline` | `R2_KEY_PREFIX` opcional en `ingest/storage/keys.py` | pequeño, aditivo |
+| `nexrad-l3-pipeline` | `site_id` explícito cuando el producto no trae encabezado WMO — `decoder/level3.py:166`, `phenomena/parse.py:236`, `phenomena/vwp.py:68`. Ver [Contrato con el pipeline](../referencia/contrato-pipeline.md) | pequeño, aditivo |
 | `lamula-webviewer` | Credenciales por token de job, línea de tiempo en la ventana del job, pantalla de estado, ocultar viento y rayos en jobs históricos | mediano, aditivo |
 | `lamula-process` | Ninguno. De ahí solo se porta conocimiento y datos. | — |
 

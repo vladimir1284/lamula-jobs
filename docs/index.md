@@ -24,8 +24,12 @@ flowchart LR
 Empieza por [Contexto y alcance](alcance/contexto.md), sigue por
 [Decisiones de diseño](alcance/decisiones.md).
 
-!!! danger "Repo recién creado"
-    Solo existe el scaffold de documentación. **La Fase 0 no se ha ejecutado**: nadie ha
-    automatizado todavía `nbtcp` ni ha comprobado que un volumen de AWS recorre la cadena
-    entera. Hasta que F0 pase, todo lo de aquí es diseño sobre papel. Ver
-    [Fases](implementacion/fases.md).
+!!! danger "La Fase 0 sigue sin ejecutarse"
+    Nadie ha automatizado todavía `nbtcp` ni ha comprobado que un volumen de AWS recorre la
+    cadena entera, así que el diseño sigue siendo papel. Ver [Fases](implementacion/fases.md).
+
+    Lo que sí está hecho, sin contenedor: el catálogo está medido
+    ([Catálogo verificado](referencia/catalogo-verificado.md)), y una de las puertas de F0 ya
+    tiene respuesta parcial —un producto sin encabezado WMO rompe el pipeline,
+    [Contrato con el pipeline](referencia/contrato-pipeline.md)—. Las herramientas están en
+    `f0/`.

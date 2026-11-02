@@ -31,6 +31,11 @@ demo live, que es lo que ya está enseñándose a clientes.
 | Duración real de un job de 12 volúmenes | Alimenta la estimación que ve el cliente |
 | Tamaño en disco de productos y COGs por volumen | Dimensionar staging y R2 |
 
+Lo que ya se sabe sin contenedor, del lado de la entrada: un job de doce volúmenes de huracán
+son **unos 240 MB de descarga** y poco más de una hora de reloj a `-T`; una ventana de seis
+horas, más de 1 GB y seis horas de nodo. Detalle por caso en
+[Catálogo verificado](../referencia/catalogo-verificado.md).
+
 Si el margen libre del VPS resulta menor que unos dos núcleos, D7 vuelve a la mesa. No es una
 decisión irrevocable, es una decisión tomada con los datos de hoy.
 

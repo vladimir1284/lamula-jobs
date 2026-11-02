@@ -34,6 +34,13 @@ El tope real de volúmenes por job lo pone también el reloj: a tiempo real son 
 volumen, así que 48 volúmenes son unas cuatro horas de nodo. La prioridad alta adelanta en la
 cola; no acelera el job.
 
+!!! note "Falta un tope en bytes"
+    Un volumen de huracán ocupa de 12 a 25 MB y uno de día tranquilo 5,9 MB
+    ([Catálogo verificado](../referencia/catalogo-verificado.md)), así que esta tabla, que solo
+    cuenta volúmenes, deja que un `demo` mueva entre 70 MB y 300 MB de staging y un
+    `evaluacion` hasta 1,2 GB. Propuesta pendiente de aprobar: `max_bytes` en `tiers`,
+    validado al crear el job, que es cuando `jobs-api` ya conoce el tamaño de cada clave.
+
 ## Dos tokens distintos, a propósito
 
 | Token | Qué abre | Vida |

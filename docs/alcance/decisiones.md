@@ -62,6 +62,13 @@ puerta abierta, y montar cuentas de verdad para una decena de prospectos es desp
 El ORPG B24 espera Message 31. Los ficheros V03/V04/V05 no se ofrecen en el catálogo. Motivo:
 compatibilidad; además el filtro es gratis, el sufijo está en la clave de S3.
 
+**Matiz verificado el 2026-11-02** (no cambia la decisión, cambia cómo se implementa el
+filtro): hasta 2015 el V06 se guarda envuelto en gzip, con la clave terminada en `_V06.gz`, y
+en el archivo hay también **V07** (KEVX en 2013, cabecera `AR2V0007.706`), que D9 no nombraba.
+El filtro va por lista blanca —`_V06` y `_V06.gz`— y nunca por lista negra. Además, el límite
+inferior del catálogo seleccionable es por radar, entre 2012 y 2014. Medidas en
+[Catálogo verificado](../referencia/catalogo-verificado.md).
+
 ## D10 — El listado del catálogo AWS vive en el servidor (2026-11-01)
 
 `jobs-api` lista el bucket con boto3 anónimo, aunque el bucket tenga CORS y el navegador
