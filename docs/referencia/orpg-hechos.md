@@ -187,7 +187,7 @@ Irma del 2017-09-10). Los comandos están en [F0 en una máquina con Docker](../
 | `change_radar -r kamx -S -R` + `mrpg -p -v startup` deja las coordenadas de KAMX | `RDA LATITUDE: 25611`, `RDA LONGITUDE: -80413` |
 | Con `-p`, los volúmenes del bucket **no se leen**: `BZ2_bzRead failed (error -5)` | `pa_files.c:565` marca todo fichero de playlist como `AP_NCDC_TYPE`; `-d` los clasifica por nombre y sí funciona |
 | `mrpg -p -v startup` termina en ~2 s pero el proceso no sale | `ps` tras `startup completed` |
-| `play_a2 -m` no es rápido: **2 volúmenes en 741 s** (~6 min/volumen) | Medida de 2 volúmenes; la de 12 en curso |
+| `play_a2 -m` no es rápido: **12 volúmenes en 4 670 s** (78 min, ~6,5 min/volumen); con 2 volúmenes fueron 741 s | `f0-run/run_modes.sh`, enlace `LR=100000`; 127 ficheros de salida |
 | `nbtcp` cierra los sockets por `AWIPS product completion timer expired` y reconecta tras productos grandes | `nbtcp.log.4491` |
 | **Un producto puede quedar truncado sin error**: un N0B declaraba 401 427 B y se guardaron 399 360 | `f0/integridad.py`; el siguiente N0B, completo, decodifica y su flujo bz2 da 1 329 150 B, igual que el de referencia del bucket |
 
@@ -198,7 +198,7 @@ fallidos, y los 21 se explican por dos causas.
 
 | Hecho | Evidencia |
 |---|---|
-| **El truncado de N0B es la regla, no la excepción**: 4 de 7 N0B salieron cortados, siempre en múltiplos de 10 240 B | `f0/integridad.py`; `l3proc` los rechaza con un aviso de MetPy y un `ValueError` (el fallo es ruidoso aguas abajo) |
+| **El truncado de N0B es la regla, no la excepción**: 8 de 12 N0B de la pasada `-m` completa salieron cortados (los cuatro enteros fueron cuestión de tiempo), siempre en múltiplos de 10 240 B | `f0/integridad.py`; `l3proc` los rechaza con un aviso de MetPy y un `ValueError` (el fallo es ruidoso aguas abajo) |
 | La causa es `#define AWIPS_PRODUCT_COMPLETION_TIME 30` en `nbtcp_process_rpg_msgs.c:90`: si el producto no ha llegado entero 30 s después de empezar, `nbtcp` cierra los sockets | El log muestra cada N0B empezando y cerrándose exactamente 30 s después, a ~13 KB/s |
 | **Hipótesis sin probar**: el límite es la velocidad del enlace, `LR=100000` (100 kbit/s) del runbook; 400 KB a esa velocidad son ~32 s. Se sube a `LR=1536000` para la pasada `-T` | Aritmética + el ritmo observado; la prueba es que `products-T` salga sin truncados |
 | Los `GSM…_210602060628[.n]` (230 B, estado general) **no son productos** y `l3proc` los falla: hay que filtrarlos antes de entregar el job al pipeline | 16 de los 21 fallos |
