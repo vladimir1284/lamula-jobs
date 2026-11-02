@@ -21,8 +21,11 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
   distintos y comprobando que no se cuela ningún producto del primero.
 - MetPy decodifica el fichero de `nbtcp` igual que el del feed de Unidata.
 - **Equivalencia**: elegir un KAMX reciente donde existan a la vez Level II en AWS y Level III
-  en el bucket de Unidata; pasar el mismo volumen por las dos vías y comparar los COG. Es la
-  validación cuantitativa de toda la cadena.
+  en el bucket de Unidata; pasar el mismo volumen por las dos vías y comparar. Es la validación
+  cuantitativa de toda la cadena. Herramienta y lado de referencia ya hechos:
+  `f0/equivalencia.py`. Buscar la pareja tampoco cuesta nada —los 302 volúmenes de KAMX del
+  2026-11-01 tienen su Level III con el mismo sello de tiempo—, ver
+  [Catálogo verificado](../referencia/catalogo-verificado.md).
 - Las medidas de recursos de [Límites y recursos](../operacion/limites-recursos.md).
 
 Nada de lo que sigue se escribe hasta que esto pase.

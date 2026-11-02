@@ -12,6 +12,7 @@ la cabecera PEP 723.
 | Script | Para qué |
 |---|---|
 | `catalogo.py` | Listar, medir y descargar del bucket `unidata-nexrad-level2` |
+| `equivalencia.py` | Huella de un producto con el decodificador del pipeline, y comparación de dos huellas |
 | `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
 
 ### `catalogo.py`
@@ -39,6 +40,31 @@ f0/catalogo.py fetch KAMX 2017-09-10T12:00 2017-09-10T18:00 ./vols --max 12
 Los resultados ya tomados están en
 [Catálogo verificado](../docs/referencia/catalogo-verificado.md).
 
+### `equivalencia.py`
+
+La puerta cuantitativa de F0: el mismo barrido por las dos vías tiene que decir lo mismo. El
+script saca una huella de cada producto **con el decodificador del pipeline**, no con una
+reimplementación, y compara dos huellas campo a campo —identificador, VCP, hora de volumen,
+geometría, calibración, fracción de celdas válidas y percentiles del valor físico—.
+
+```bash
+# lado de referencia: los diez productos del feed público para un volumen concreto
+f0/equivalencia.py referencia KAMX 2026-11-01T00:13:20 --dir ref
+f0/equivalencia.py huella ref --salida ref.json
+
+# lado del job: lo que haya escrito nbtcp
+f0/equivalencia.py huella salida_nbtcp --salida job.json
+
+f0/equivalencia.py comparar ref.json job.json
+```
+
+Comprobado el 2026-11-02 con datos reales: los diez productos del feed decodifican sin tocar
+nada, una huella contra sí misma no da ninguna diferencia, y dos volúmenes separados cuatro
+minutos dan diferencias en todos los productos. O sea, la herramienta ni falla ni perdona de
+más. Lo que falta es el otro lado, que necesita el contenedor.
+
+Devuelve código 1 si hay diferencias, así que sirve de puerta en un script.
+
 ## Lo que ya está respondido sin contenedor
 
 - El archivo de `unidata-nexrad-level2` llega hasta **1991**, pero lo seleccionable empieza
@@ -51,6 +77,8 @@ Los resultados ya tomados están en
   del 2026-11-01 tienen su N0B con el mismo sello de tiempo.
 - Un producto Level III **sin encabezado WMO** rompe el pipeline en `siteID`
   ([contrato](../docs/referencia/contrato-pipeline.md)).
+- Los diez productos del feed decodifican con el pipeline tal cual: siete rásters, dos de
+  fenómenos y el perfil de viento. Es el lado de referencia de la comparación, ya listo.
 
 ## Lo que falta y necesita el contenedor
 
