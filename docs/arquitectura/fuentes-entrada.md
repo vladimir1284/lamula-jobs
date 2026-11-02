@@ -26,7 +26,10 @@ estimada antes de confirmar.
 
 Encima de eso, un menú de **casos preparados** —Irma/KAMX, Harvey/KHGX, Michael/KEVX,
 Ian/KTBW, Milton/KTBW— que rellena sitio y rango de un clic. Los cinco están medidos en
-[Catálogo verificado](../referencia/catalogo-verificado.md): volúmenes, bytes, cadencia y VCP.
+[Catálogo verificado](../referencia/catalogo-verificado.md), y de ahí salen las ventanas
+concretas: hora y media cada una, entre 13 y 17 volúmenes, 80-88 minutos de nodo. **La ventana
+no es la hora de la recalada**, es la del máximo de eco cerca del radar, que se midió y resultó
+ser otra; en el caso de Harvey resultó ser otro día.
 Dos cosas que salieron de esa medida y afectan al selector: **Harvey cambia de VCP a mitad de
 ventana**, e **Irma trae volúmenes parciales y un corte de diez minutos** —KAMX tenía el
 huracán encima—.

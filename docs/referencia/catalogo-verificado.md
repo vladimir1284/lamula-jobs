@@ -95,6 +95,39 @@ caerse, y la línea de tiempo del viewer tiene que poder enseñar un hueco.
 Con `-T`, un hueco de diez minutos son diez minutos de nodo sin hacer nada. De ahí la propuesta
 de umbral de [Pendientes](../alcance/pendientes.md).
 
+## Casos preparados, elegidos por medida
+
+Las ventanas de arriba eran de seis horas y estaban puestas a ojo. Medida la intensidad de
+verdad —`f0/intensidad.py` decodifica el barrido más bajo y cuenta qué fracción del área a
+menos de 150 km supera los 35 dBZ—, estas son las horas que de verdad se quieren enseñar:
+
+| Caso | Sitio | Pico (UTC) | % área con eco fuerte | Ventana propuesta | Vols | Tamaño | A `-T` |
+|---|---|---|---|---|---|---|---|
+| Milton | KTBW | 2024-10-09 23:49 | **45,7 %** | 23:00–00:30 | 14 | 302 MB | 88 min |
+| Michael | KEVX | 2018-10-10 19:31 | 37,6 % | 19:00–20:30 | 17 | 221 MB | 85 min |
+| Harvey | KHGX | **2017-08-27** 12:52 | 36,6 % | 12:00–13:30 | 17 | 284 MB | 85 min |
+| Irma | KAMX | 2017-09-10 17:36 | 34,5 % | 17:00–18:30 | 13 | 278 MB | 82 min |
+| Ian | KTBW | 2022-09-28 22:08 | 32,5 % | 21:30–23:00 | 13 | 217 MB | 80 min |
+
+Dos cosas que cambiaron al medir:
+
+**Harvey estaba en el día equivocado.** La ventana que teníamos apuntaba a la madrugada del 26
+de agosto, la noche de la recalada, que ocurrió a unos 200 km de KHGX: el radar de Houston
+veía como mucho un 15 % de área con eco fuerte, y el pico de ese día —11:35 UTC, 15,1 %— es
+peor que el valle del día siguiente. El 27 de agosto, el de la inundación de Houston, llega al
+36,6 % y además trae entre un 2 % y un 3 % de área por encima de 50 dBZ entre las 04:00 y las
+09:00, que es convección de verdad. Es también el caso que mejor luce los productos de
+acumulación (DAA, DU3, DTA), porque es una inundación, no un viento.
+
+**Ninguna de las cinco ventanas de seis horas contenía su pico en el centro.** Puestas a ojo
+sobre la hora de recalada, cuatro de las cinco lo tenían cerca del borde. La recalada y el
+máximo de eco **cerca del radar** no son el mismo instante: el radar ve lo mejor cuando la
+tormenta le pasa cerca, que puede ser horas antes o después de que el ojo toque tierra.
+
+Las cinco ventanas propuestas caben de sobra en un job de nivel `demo` (12 volúmenes) y cuestan
+entre 80 y 88 minutos de nodo. Para la cuota en bytes que propone
+[Pendientes](../alcance/pendientes.md), el peor caso de los cinco son 302 MB.
+
 ## El tamaño del fichero no mide la tormenta
 
 Parecía un atajo: un volumen comprime peor cuanto más eco tiene, así que los bytes que ya

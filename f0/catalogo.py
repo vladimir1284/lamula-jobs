@@ -50,14 +50,14 @@ S3_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 # LDM no cabe, el probe reintenta con el cuádruple.
 PROBE_BYTES = 65536
 
-# Casos preparados de `docs/arquitectura/fuentes-entrada.md`. La ventana es la
-# hora de paso más cercana al radar, en UTC.
+# Casos preparados de `docs/arquitectura/fuentes-entrada.md`. Las ventanas salen de medir el
+# eco con `intensidad.py`, no de la hora de recalada: no son el mismo instante.
 CASES: dict[str, tuple[str, str, str]] = {
-    "irma": ("KAMX", "2017-09-10T12:00", "2017-09-10T18:00"),
-    "harvey": ("KHGX", "2017-08-26T00:00", "2017-08-26T06:00"),
-    "michael": ("KEVX", "2018-10-10T14:00", "2018-10-10T20:00"),
-    "ian": ("KTBW", "2022-09-28T15:00", "2022-09-28T21:00"),
-    "milton": ("KTBW", "2024-10-09T20:00", "2024-10-10T02:00"),
+    "irma": ("KAMX", "2017-09-10T17:00", "2017-09-10T18:30"),
+    "harvey": ("KHGX", "2017-08-27T12:00", "2017-08-27T13:30"),
+    "michael": ("KEVX", "2018-10-10T19:00", "2018-10-10T20:30"),
+    "ian": ("KTBW", "2022-09-28T21:30", "2022-09-28T23:00"),
+    "milton": ("KTBW", "2024-10-09T23:00", "2024-10-10T00:30"),
 }
 
 
