@@ -1,0 +1,42 @@
+
+== irma ==
+KAMX  2017-09-10 12:02:42 → 17:57:11 UTC
+  volúmenes V06 : 57
+  tamaño        : 1124.3 MB (19.7 MB/volumen)
+  cadencia      : min 47 s, mediana 391 s, max 601 s
+  duración a -T : 354 min de reproducción
+  VCP           : 212 desde 12:02:42
+
+== harvey ==
+KHGX  2017-08-26 00:05:29 → 05:57:51 UTC
+  volúmenes V06 : 66
+  tamaño        : 773.9 MB (11.7 MB/volumen)
+  cadencia      : min 148 s, mediana 329 s, max 450 s
+  duración a -T : 352 min de reproducción
+  VCP           : 121 desde 00:05:29, 212 desde 01:50:52
+  !! 1 cambio(s) de VCP dentro de la ventana
+
+== michael ==
+KEVX  2018-10-10 14:04:11 → 19:57:33 UTC
+  volúmenes V06 : 69
+  tamaño        : 1032.9 MB (15.0 MB/volumen)
+  cadencia      : min 297 s, mediana 305 s, max 424 s
+  duración a -T : 353 min de reproducción
+  VCP           : 212 desde 14:04:11
+
+== ian ==
+KTBW  2022-09-28 15:00:48 → 20:54:51 UTC
+  volúmenes V06 : 54
+  tamaño        : 1035.2 MB (19.2 MB/volumen)
+  cadencia      : min 398 s, mediana 400 s, max 468 s
+  duración a -T : 354 min de reproducción
+  VCP           : 112 desde 15:00:48
+
+== milton ==
+KTBW  2024-10-09 20:06:44 → 01:58:27 UTC
+  volúmenes V06 : 53
+  tamaño        : 1164.6 MB (22.0 MB/volumen)
+  cadencia      : min 369 s, mediana 400 s, max 483 s
+  duración a -T : 352 min de reproducción
+  VCP           : 212 desde 20:06:44
+EXIT=0
