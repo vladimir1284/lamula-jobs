@@ -80,6 +80,35 @@ La decisión no se toma aquí: F0 tiene que mirar primero qué escribe `nbtcp` d
 esta página fija es que **si escribe el producto pelado, el pipeline no lo traga hoy**, y que
 eso se sabe antes de montar el contenedor, no después.
 
+## La altura del radar viene en pies y se guarda como metros
+
+!!! danger "Verificado el 2026-11-02. Es un fallo del pipeline, no del demo, pero lo heredamos"
+    El bloque de descripción del producto trae la altura del radar **en pies sobre el nivel
+    del mar**. `Level3File.height` de MetPy devuelve ese entero tal cual, sin convertir, y el
+    pipeline lo asigna a `height_m` y lo escribe en `radars.height_m`.
+
+Dos productos reales del feed, contra el catálogo de sitios de `lamula-process`:
+
+| Sitio | `height` del producto | En metros (×0,3048) | `altM` del catálogo (cota del terreno) |
+|---|---|---|---|
+| AMX (Miami) | 111 | 33,8 | 4,27 |
+| ABX (Albuquerque) | 5951 | 1813,9 | 1789,18 |
+
+La conversión cuadra con la cota del terreno más la torre en los dos casos, con tres órdenes de
+magnitud de diferencia entre ellos. No hay otra lectura posible: el número es en pies.
+
+Dónde duele: `ingest/mosaic/service.py:388` pasa ese valor como `antenna_h_m` y
+`ingest/mosaic/quality.py:47` lo suma en metros a la altura del haz, que después se pondera con
+una altura de referencia de 4000 m. Para un radar costero el error son 78 m y no se nota. Para
+ABX son **4,1 km de más**, que a esa referencia le hunde el peso en todo su dominio. El mosaico
+multi-radar de montaña está pesando mal.
+
+Para este repo la consecuencia es más pequeña pero hay que tenerla en cuenta en dos sitios:
+`change_radar.dat` quiere la elevación de antena **en pies** (`116` en el ejemplo de kmlb),
+mientras que el catálogo de sitios la tiene en metros y además es **cota del terreno, no altura
+de antena**. Al generar la línea de un sitio nuevo hay que convertir y sumar la torre, o el
+producto saldrá con una altura que no es la del radar del cliente.
+
 ## Lo que F0 confirma de este contrato
 
 - [ ] ¿Escribe `nbtcp` el encabezado WMO, o el producto pelado?
