@@ -22,9 +22,18 @@ a AWS.
 Validación antes de gastar una hora de CPU:
 
 - Cabecera `AR2V00xx` en los primeros 9 bytes.
-- ICAO idéntico en todos los ficheros (bytes 20–24 de la cabecera de volumen).
+- ICAO idéntico en todos los ficheros (bytes 20–24 de la cabecera de volumen). Comprobada la
+  posición el 2026-11-02: la cabecera son 9 bytes de versión, 3 de número de volumen, 4 de
+  fecha, 4 de hora y 4 de ICAO.
 - Orden cronológico estricto y huecos por debajo del umbral.
 - Número de volúmenes dentro de la cuota del token.
+
+!!! warning "Los volúmenes anteriores a 2016 vienen en gzip"
+    Las claves que acaban en `_V06.gz` —todo el archivo entre 2013 y 2015— llevan la cabecera
+    `AR2V00xx` **dentro** del gzip, así que los dos primeros chequeos hay que hacerlos sobre el
+    flujo descomprimido. `play_a2` acepta el `.gz` tal cual, de modo que no hay que
+    desempaquetar nada para reproducir; solo para validar. Ver
+    [Catálogo verificado](../referencia/catalogo-verificado.md).
 
 ## 3. Adaptar el sitio
 
