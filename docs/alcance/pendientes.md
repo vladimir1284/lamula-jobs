@@ -16,8 +16,27 @@ Huecos abiertos, ordenados por lo que bloquean.
 
 ## Bloqueantes de la apertura a terceros
 
-- **Licencia del CODE Public Edition**: ¿permite ofrecerlo como servicio a terceros? Pendiente
-  legal, no técnico. Ver [Límites y recursos](../operacion/limites-recursos.md).
+La pregunta de licencia está **resuelta y es mala noticia**: ver
+[Licencia del CODE](../referencia/licencia.md). El paquete no trae licencia, pero sí código de
+la Universidad de Oklahoma con cláusula no comercial y con "not to be provided or used in any
+format", y código de MIT Lincoln Laboratory reproducible solo "by or for the U.S. Government".
+Los tres se compilan hoy. Lo que queda son acciones, no dudas:
+
+- **Excluir del build** `src/cpc004/tsk015`, `tsk017`, `tsk019` y `src/cpc023/tsk006`, y
+  comprobar que el enlazado del resto aguanta. Cambio en `radar-orpg-dev`, no aquí.
+- **Verificar si `src/cpc101/tsk001` es prescindible.** Es ingesta de rejillas de modelo; hay
+  que confirmar que DAA, DU3 y DTA no dependen de él antes de cortarlo.
+- **Decidir si la imagen sale alguna vez de nuestra infraestructura.** Si el prospecto nunca
+  hace `pull` y solo ve productos renderizados en nuestra web, el problema de distribución
+  desaparece y solo queda el de uso. Es la vía corta, y la recomendada.
+- **Escribir a Michael Istok** (`michael.istok@noaa.gov`) en paralelo, para que conste por
+  escrito la postura de la NWS sobre uso comercial y redistribución.
+- **Etiquetado de salida**: los productos del demo no pueden presentarse como oficiales del
+  NWS, ni usar su nombre o identificadores. Esto toca la interfaz del viewer demo, así que es
+  trabajo de F3, no una nota legal al margen.
+
+Nada de esto bloquea F0 ni F1, que corren en nuestra máquina y para nuestro desarrollo. Bloquea
+F4, que es cuando entra el primer tercero.
 
 ## Decisiones que faltan
 

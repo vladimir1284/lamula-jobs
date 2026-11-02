@@ -22,6 +22,7 @@ O leer directamente bajo `docs/`:
 - `docs/arquitectura/ciclo-runner.md` — un job de principio a fin
 - `docs/implementacion/fases.md` — plan de trabajo, empezando por la Fase 0
 - `docs/referencia/orpg-hechos.md` — lo verificado del CODE Guide, para no releer los PDF
+- `docs/referencia/licencia.md` — qué se puede y qué no con el CODE; léelo antes de abrir esto a terceros
 
 ## Estado
 

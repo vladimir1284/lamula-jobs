@@ -34,6 +34,10 @@ escribir el servicio, no después.
   `radars` tienen que coincidir con los del job. Un `change_radar` que no surtió efecto no
   produce ningún error visible, solo un COG en el sitio equivocado.
 - **Sin socket de Docker.** El runner es persistente y recicla el ORPG; no crea contenedores.
+- **La imagen del ORPG no se comparte con nadie de fuera** mientras no se resuelva lo de
+  `docs/referencia/licencia.md`. Contiene código de la Universidad de Oklahoma con cláusula no
+  comercial y código de MIT Lincoln Laboratory reproducible solo por o para el gobierno de
+  EEUU. Antes de que entre el primer tercero hay que excluir esos directorios del build.
 
 ## Convenciones
 

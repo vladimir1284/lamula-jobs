@@ -36,7 +36,8 @@ decisión irrevocable, es una decisión tomada con los datos de hoy.
 
 ## Licencia
 
-La imagen del ORPG es redistribución restringida; por eso el paquete de GHCR es privado.
-Ofrecerla **como servicio** a terceros no es lo mismo que redistribuirla, pero tampoco es
-obviamente lo mismo que usarla en desarrollo. Hay que leer la licencia del CODE Public Edition
-antes de abrir esto a prospectos. Es un pendiente bloqueante de tipo legal, no técnico.
+Resuelto el 2026-11-01: ver [Licencia del CODE](../referencia/licencia.md). Resumen: el paquete
+no trae licencia, pero arrastra código de terceros con cláusula no comercial que hoy se compila.
+Tanto ofrecerlo como servicio comercial como distribuir la imagen están prohibidos **tal como
+se compila hoy**; se subsana excluyendo cinco directorios del build. Las acciones concretas
+están en [Pendientes](../alcance/pendientes.md).
