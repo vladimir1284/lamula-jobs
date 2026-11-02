@@ -31,23 +31,32 @@ cada paso y dónde se anota cada resultado. F0 no necesita Postgres, ni R2, ni e
 Esta sección es el punto de partida de la próxima sesión. **Todo lo que hace falta saber está en
 el repo**: no hay notas, medidas ni acuerdos guardados fuera de aquí.
 
-**La Fase 0 sigue sin ejecutarse.** La sesión que preparó todo lo demás no tenía acceso al
-demonio de Docker (`permission denied ... /var/run/docker.sock`). Lo que se podía responder
-leyendo el catálogo, midiendo con las herramientas de `f0/` o leyendo el fuente del CODE está
-respondido y documentado; lo del ORPG está pendiente entero.
+**La Fase 0 se ejecutó el 2026-11-02** en un contenedor (imagen local `orpg-prod:b24`, contenedor
+`orpg-f0`). Las puertas, una a una, con su evidencia en `docs/referencia/`:
 
-Si esta máquina **sí** tiene Docker, el punto de entrada es
-`docs/implementacion/f0-ejecucion.md`: comandos literales en orden, la puerta de cada paso y
-dónde se anota cada resultado. Dos cosas que solo están ahí y conviene saber antes de empezar:
+| Puerta | Resultado |
+|---|---|
+| `nbtcp -A -b` sin terminal | **Pasa.** El último argumento tiene que ser el hostname |
+| Encabezado WMO de 30 B | **Pasa** con `-A`; originador `KMFL` para KAMX, `KHGX` para HGX |
+| Coordenadas del sitio | **Pasa**, `f0/coordenadas.py` con control negativo |
+| Aislamiento KAMX → KHGX (D3) | **Pasa**, con límites (un cambio, una dirección) |
+| `l3proc` digiere los productos | **Pasa**: 106 de 106 en 12 volúmenes |
+| Equivalencia contra el feed oficial | **Parcial**: N0B, EET, DVL, NMD iguales; N0G y NVW con ≥4 volúmenes; DAA converge; DTA y los ids de NST no, con 13 min de historia |
+| Velocidad (D6) | **Medida**: los tres modos iguales en productos y ~80 min por 12 volúmenes |
+| Recursos | **Parcial**: un volumen (125 % de CPU de pico, 790 MiB); falta con el pipeline live en el nodo |
 
-- **F0 no necesita Postgres, ni R2, ni el Swarm.** `l3proc process` sin `--publish` y
-  `l3proc watch --no-publish` escriben los COG en disco. F0 corre entero en un portátil.
-- **La imagen `orpg:b24` no trae la configuración de `nbtcp`.** Se hace a mano en F0 y se
-  hornea en la imagen del runner en F1.
+Hallazgos que cambian el diseño, todos en `docs/referencia/orpg-hechos.md`:
+`play_a2 -p` no lee el formato del bucket (usar `-d`); `nbtcp` trunca en silencio a los 30 s y la
+causa era `LR=100000` (D11); `l3proc watch` consume su entrada; `mrpg startup` no sale; `GSM…`,
+`P173_…` y `RR_…` no son productos.
 
-Antes de fiarte de cualquier número de estas páginas, pasa `f0/comprobar.py`: repite las ocho
-comprobaciones contra el bucket real en alrededor de un minuto. El bucket y MetPy cambian por su
-cuenta.
+**Lo que NO está hecho de F0:** la equivalencia no se midió con muchos volúmenes de historia, el
+retraso del `processor` con el pipeline live, y la repetición de cada modo (hay una sola corrida
+por modo). **No se ha escrito código del servicio.** Siguiente paso natural: F1, una vez el dueño
+decida D6 y revise lo de abajo.
+
+Estado de las máquinas: el contenedor `orpg-f0` sigue arriba y `f0-run/` (no versionado, ~1 GB)
+tiene volúmenes y productos. `docs/implementacion/plan-autonomo.md` dice qué se hizo sin supervisión.
 
 ### Esperando al dueño del producto
 
@@ -56,10 +65,10 @@ Nada de esto se ejecuta por iniciativa propia:
 | Qué | Dónde está |
 |---|---|
 | Dos borradores de consulta de licencia, sin enviar | `correspondencia/` — NWS y Universidad de Oklahoma. La dirección de OU está sin rellenar a propósito: se busca en ou.edu/otc, no se inventa |
-| D6 (velocidad de reproducción), a re-decidir **después** de que F0 mida `-T`, sin `-T` y `-m` | `docs/alcance/decisiones.md` |
+| D6 (velocidad de reproducción): ya medida, los tres modos iguales y ~80 min por 12 volúmenes; **decide el dueño** | `docs/referencia/velocidad-reproduccion.md` |
 | `-A` con el enrutado real del NWS, o parchear el pipeline con un `site_id` explícito | `docs/referencia/contrato-pipeline.md` |
 | Umbral de huecos, `max_bytes` por job, texto del formulario de acceso | `docs/alcance/pendientes.md` |
-| Los siete artículos de `linkedin/`, sin publicar: describen un demo comercial sobre el CODE | `linkedin/` — el 07 lleva nota explícita |
+| Los diez artículos de `linkedin/`, sin publicar: describen un demo comercial sobre el CODE | `linkedin/` — el 07 lleva nota explícita |
 
 ### Lo que ya salió de este repo
 

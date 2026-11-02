@@ -14,10 +14,10 @@ ORPG a partir del Level II de ese volumen. Tolerancia 0,1 %.
 | EET (ecos tope) | **igual** |
 | DVL (VIL) | **igual** |
 | NMD (mesociclones) | **igual** |
-| N0G (velocidad) | máximo 49,0 frente a 47,5 (3,1 %), suma 1,3 % |
+| N0G (velocidad) | máximo 49,0 frente a 47,5 (3,1 %) con un volumen; **igual con cuatro** |
 | DAA, DTA (acumulaciones) | distintos: p50 un 73 % menor, suma un 94 a 99,6 % menor |
 | NST (tormentas) | mismas 24 celdas, **identificadores distintos** (`A1, A7…` frente a `A0, B0…`) |
-| NVW (viento vertical) | 12 niveles frente a 13 |
+| NVW (viento vertical) | 12 niveles frente a 13 con un volumen; **igual con cuatro** |
 | DU3 | no salió (la petición 173 devuelve un fichero de estado, no un producto) |
 
 **Lo que sí está medido:** los cuatro primeros son iguales, y son los que no dependen de otros
@@ -25,8 +25,13 @@ volúmenes. **Inferencia, sin probar:** las diferencias de DAA, DTA, NST y NVW s
 El feed oficial lleva horas de acumulación y de seguimiento de tormentas, y el ORPG de F0
 arrancó en frío con un volumen (`mrpg -p startup` limpia los almacenes). Si es así, un job de
 doce volúmenes converge hacia el oficial a medida que acumula, y un job de un volumen no lo hará.
-La prueba que falta: reproducir los volúmenes previos al de referencia y comprobar que DAA, NST
-y NVW se acercan. N0G (3 %) no encaja con esa explicación y queda sin causa conocida.
+**Probado después** (4 volúmenes, 00:00:43 a 00:13:20, 1 023 s, comparando el último): con 13
+minutos de historia **N0G y NVW pasan a ser iguales al oficial**, y DAA se acerca (suma: 94 % de
+diferencia con un volumen, 73 % con cuatro; p50: 73 % y 43 %). DTA (98 %) y los identificadores
+de NST siguen distintos: necesitan más historia que 13 minutos (el DAA oficial es de una hora y
+el DTA de varias) o el seguimiento de tormentas arrancó en otra celda. Sin medir: cuánta
+historia hace falta para que converjan, y si los identificadores de NST llegan a coincidir.
+La diferencia de N0G, que parecía sin causa, era de historia también.
 
 **Para el producto:** un demo de pocos volúmenes mostrará acumulaciones y tormentas que **no
 coinciden con las oficiales**, y eso es correcto, no un fallo. Conviene decirlo en el viewer.
