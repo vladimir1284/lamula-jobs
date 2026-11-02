@@ -43,6 +43,9 @@ Misma imagen que el viewer de producción, otra configuración:
   `/j/<token>`. `server/dal/pg.ts` ya cachea conexiones por credenciales, así que esto encaja
   sin rediseñar el DAL.
 - Capas de viento y rayos ocultas cuando el job es histórico: no hay GFS ni GLM para 2017.
+  Revisado el 2026-11-02: **no hace falta para que funcione**. Sin filas de viento ni de rayos
+  el viewer entra en su estado `noData` y lo dice en el menú de capas; no hay error ni
+  pantalla rota. Ocultarlas es cosmético, y por tanto lo último de F3, no lo primero.
 
 Cambios necesarios en el repo del viewer, todos aditivos:
 
