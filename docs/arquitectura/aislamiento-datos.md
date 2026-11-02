@@ -36,9 +36,23 @@ Consecuencias, todas buenas:
   product_code, vol_time)` de `rasters`.
 
 Lo que hay que vigilar: número de schemas y de roles a lo largo del tiempo (el cron de
-expiración es parte del diseño, no un extra), y el número de conexiones, ya que cada rol abre
-su propio pool. Con `max: 5` por conexión en el viewer, el tope de jobs vivos simultáneos tiene
-que caber en `max_connections` del Postgres compartido.
+expiración es parte del diseño, no un extra), y el número de conexiones.
+
+!!! danger "El caché de conexiones del viewer no desaloja nada"
+    Revisado el 2026-11-02: `server/dal/pg.ts` guarda las conexiones en un `Map` indexado por
+    `host:puerto/base@usuario`, con `max: 5` por entrada, y **no borra ninguna entrada nunca**;
+    tampoco hay `idle_timeout` ni `max_lifetime`. En producción eso está bien, porque hay un
+    solo juego de credenciales. Con un rol por job, cada token que alguien abra deja hasta
+    cinco conexiones vivas para el resto de la vida del proceso.
+
+    El límite no es entonces "jobs simultáneos" sino **jobs distintos vistos desde que se
+    arrancó el viewer**. Con un `max_connections` de 100 eso son unos veinte tokens, y después
+    el viewer deja de poder abrir nada, incluido el job que está corriendo.
+
+    Dos salidas, las dos pequeñas y aditivas en `pg.ts`: bajar `max` a 1 o 2 para el viewer
+    demo —un prospecto mirando su propio job no necesita cinco— y desalojar por LRU llamando a
+    `sql.end()` al sacar una entrada del `Map`. Conviene decidirlo en F3 y no al encontrarse
+    el Postgres sin conexiones.
 
 ## Por job: prefijo en R2
 
