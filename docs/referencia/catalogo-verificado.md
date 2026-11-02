@@ -95,6 +95,42 @@ caerse, y la línea de tiempo del viewer tiene que poder enseñar un hueco.
 Con `-T`, un hueco de diez minutos son diez minutos de nodo sin hacer nada. De ahí la propuesta
 de umbral de [Pendientes](../alcance/pendientes.md).
 
+## El tamaño del fichero no mide la tormenta
+
+Parecía un atajo: un volumen comprime peor cuanto más eco tiene, así que los bytes que ya
+devuelve el listado deberían servir de proxy de intensidad y ahorrar descargas. **No sirve.**
+
+KTBW el día de Ian, 206 volúmenes, uno de cada cuatro perfilado:
+
+| Patrón | Horas | MB mínimo | MB mediana | MB máximo |
+|---|---|---|---|---|
+| VCP 212 | 00:03–12:40 | 19,8 | 23,4 | 25,0 |
+| VCP 112 | 13:09–23:49 | 16,2 | 18,8 | 21,0 |
+
+La recalada fue por la tarde, dentro del tramo de VCP 112 —el de los ficheros **pequeños**—. Lo
+que domina el tamaño es el patrón de barrido: cuántos cortes de elevación y a qué resolución,
+no cuánta lluvia hay delante. Elegir ventana por bytes elige el patrón más caro, no la tormenta
+más fuerte.
+
+`f0/catalogo.py ventana` sigue existiendo y sigue eligiendo por bytes, pero para lo que sí vale:
+dimensionar el peor caso de descarga y de staging.
+
+## Los dos archivos no tienen la misma profundidad
+
+| Bucket | Primer dato |
+|---|---|
+| `unidata-nexrad-level2` (base data) | 1991, utilizable desde 2012-2014 según el radar |
+| `unidata-nexrad-level3` (productos) | **entre el 1 y el 5 de marzo de 2022** |
+
+Consecuencia directa, y no es menor: para un caso anterior a marzo de 2022 **no existe producto
+oficial con el que comparar**. La puerta de equivalencia de F0 solo se puede ejecutar con datos
+recientes; Irma, Harvey y Michael no tienen lado de referencia. Y si alguna vez se quiere
+enseñar en el viewer "lo nuestro contra lo oficial" en un caso preparado, solo Ian y Milton lo
+permiten.
+
+Visto de otro modo: lo que el demo genera para un huracán de 2017 **no existe en ningún
+archivo público**. Es un argumento de venta, no un problema.
+
 ## Equivalencia Level II ↔ Level III
 
 La puerta de equivalencia de F0 necesita el mismo barrido por las dos vías. Comprobado para
@@ -125,6 +161,7 @@ Un día entero de un sitio se perfila con ~2 MB de tráfico en vez de 6 GB.
 ```bash
 f0/catalogo.py cases --vcp
 f0/catalogo.py eras KEVX --desde 2010 --hasta 2016
+f0/catalogo.py ventana KTBW 2022-09-28T00:00 2022-09-29T00:00 -n 12
 f0/catalogo.py scan KAMX 2017-09-10T12:00 2017-09-10T18:00 --vcp --gaps
 f0/catalogo.py pairs KAMX 2026-11-01 --product N0B
 ```

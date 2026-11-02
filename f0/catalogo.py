@@ -274,6 +274,41 @@ def cmd_cases(args: argparse.Namespace) -> int:
     return 0
 
 
+def best_window(vols: list[Volume], n: int, max_gap_s: float) -> list[Volume]:
+    """Los n volúmenes consecutivos que más bytes suman, sin ningún hueco mayor que el tope.
+
+    El tamaño comprimido de un volumen crece con el eco: bzip2 comprime mucho un cielo vacío y
+    poco una tormenta. Sirve de proxy barato de intensidad, y se calcula con lo que ya devuelve
+    el listado del bucket, sin bajar nada.
+    """
+    best: list[Volume] = []
+    best_bytes = -1
+    for i in range(len(vols) - n + 1):
+        chunk = vols[i : i + n]
+        if any(g > max_gap_s for g in _gaps(chunk)):
+            continue
+        total = sum(v.size_bytes for v in chunk)
+        if total > best_bytes:
+            best, best_bytes = chunk, total
+    return best
+
+
+def cmd_ventana(args: argparse.Namespace) -> int:
+    vols = list_window(args.site, _parse_when(args.start), _parse_when(args.end))
+    if len(vols) < args.n:
+        print(f"{args.site}: solo {len(vols)} volúmenes en el rango, se piden {args.n}")
+        return 1
+    chunk = best_window(vols, args.n, args.max_gap)
+    if not chunk:
+        print(f"{args.site}: no hay {args.n} consecutivos sin huecos de más de {args.max_gap:.0f} s")
+        return 1
+    print(_summary(args.site, chunk))
+    print()
+    for vol in chunk:
+        print(f"{vol.scan_time:%Y-%m-%d %H:%M:%S}  {vol.size_bytes / 1e6:6.2f} MB  {vol.key}")
+    return 0
+
+
 def cmd_eras(args: argparse.Namespace) -> int:
     """Desde qué año un sitio ofrece V06, que es lo único que el selector puede ofrecer (D9)."""
     probe_day = (args.month, args.day)
@@ -363,6 +398,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("case", nargs="?", choices=sorted(CASES))
     p.add_argument("--vcp", action="store_true")
     p.set_defaults(func=cmd_cases)
+
+    p = sub.add_parser("ventana", help="los n volúmenes seguidos con más eco de un rango")
+    p.add_argument("site")
+    p.add_argument("start")
+    p.add_argument("end")
+    p.add_argument("-n", type=int, default=12, help="volúmenes de la ventana")
+    p.add_argument("--max-gap", type=float, default=900.0, help="hueco máximo tolerado, en segundos")
+    p.set_defaults(func=cmd_ventana)
 
     p = sub.add_parser("eras", help="qué formato ofrece un sitio año por año")
     p.add_argument("site")
