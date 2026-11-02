@@ -37,7 +37,11 @@ escribir el servicio, no después.
 - **La imagen del ORPG no se comparte con nadie de fuera** mientras no se resuelva lo de
   `docs/referencia/licencia.md`. Contiene código de la Universidad de Oklahoma con cláusula no
   comercial y código de MIT Lincoln Laboratory reproducible solo por o para el gobierno de
-  EEUU. Antes de que entre el primer tercero hay que excluir esos directorios del build.
+  EEUU.
+- **No modifiques el build del ORPG por motivos de licencia.** El asunto está en consulta con
+  los dueños del código desde el 2026-11-02. Excluir directorios del build es una de las
+  opciones sobre la mesa, no una decisión tomada; proponerla está bien, ejecutarla por tu
+  cuenta no.
 
 ## Convenciones
 

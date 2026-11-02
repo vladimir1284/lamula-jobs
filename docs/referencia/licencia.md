@@ -78,6 +78,12 @@ contiene obra de OU, MIT/LL, Northrop Grumman y varias librerías JavaScript de 
 
 ## Mitigación
 
+!!! warning "En consulta desde el 2026-11-02"
+    Nada de lo que sigue se ha ejecutado ni se va a ejecutar por iniciativa propia. El dueño
+    del producto lo está consultando con los dueños del código. Esta sección es el análisis de
+    qué sería posible, no un plan en marcha.
+
+
 Excluir del build los directorios contaminados. Son funcionalidad accesoria, no el núcleo:
 
 | Directorio | Qué es | Licencia | ¿Prescindible? |

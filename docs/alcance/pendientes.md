@@ -20,20 +20,28 @@ La pregunta de licencia está **resuelta y es mala noticia**: ver
 [Licencia del CODE](../referencia/licencia.md). El paquete no trae licencia, pero sí código de
 la Universidad de Oklahoma con cláusula no comercial y con "not to be provided or used in any
 format", y código de MIT Lincoln Laboratory reproducible solo "by or for the U.S. Government".
-Los tres se compilan hoy. Lo que queda son acciones, no dudas:
+Los tres se compilan hoy.
 
-- **Excluir del build** `src/cpc004/tsk015`, `tsk017`, `tsk019` y `src/cpc023/tsk006`, y
-  comprobar que el enlazado del resto aguanta. Cambio en `radar-orpg-dev`, no aquí.
-- **Verificar si `src/cpc101/tsk001` es prescindible.** Es ingesta de rejillas de modelo; hay
-  que confirmar que DAA, DU3 y DTA no dependen de él antes de cortarlo.
-- **Decidir si la imagen sale alguna vez de nuestra infraestructura.** Si el prospecto nunca
-  hace `pull` y solo ve productos renderizados en nuestra web, el problema de distribución
-  desaparece y solo queda el de uso. Es la vía corta, y la recomendada.
-- **Escribir a Michael Istok** (`michael.istok@noaa.gov`) en paralelo, para que conste por
-  escrito la postura de la NWS sobre uso comercial y redistribución.
+!!! warning "En consulta — no tocar ningún build"
+    El 2026-11-02 el dueño del producto se llevó este asunto a consultar con los dueños del
+    código. **Hasta que vuelva con una respuesta, no se modifica el build de `radar-orpg-dev`
+    ni el de este repo.** Lo de abajo es el menú de opciones que hay sobre la mesa, no una
+    lista de tareas asignadas.
+
+Opciones identificadas, para cuando haya respuesta:
+
+- **Excluir del build** `src/cpc004/tsk015`, `tsk017`, `tsk019` y `src/cpc023/tsk006`,
+  comprobando que el enlazado del resto aguanta. Tocaría `radar-orpg-dev`, no este repo.
+- **Averiguar si `src/cpc101/tsk001` es prescindible.** Es ingesta de rejillas de modelo; habría
+  que confirmar que DAA, DU3 y DTA no dependen de él antes de plantearse cortarlo.
+- **Acotar si la imagen sale alguna vez de nuestra infraestructura.** Si el prospecto nunca hace
+  `pull` y solo ve productos renderizados en nuestra web, el problema de distribución
+  desaparece y queda solo el de uso.
+- **Pedir la postura por escrito a Michael Istok** (`michael.istok@noaa.gov`) sobre uso
+  comercial y redistribución.
 - **Etiquetado de salida**: los productos del demo no pueden presentarse como oficiales del
-  NWS, ni usar su nombre o identificadores. Esto toca la interfaz del viewer demo, así que es
-  trabajo de F3, no una nota legal al margen.
+  NWS, ni usar su nombre o identificadores. Esto toca la interfaz del viewer demo y es trabajo
+  de F3 pase lo que pase con lo demás.
 
 Nada de esto bloquea F0 ni F1, que corren en nuestra máquina y para nuestro desarrollo. Bloquea
 F4, que es cuando entra el primer tercero.
