@@ -360,6 +360,9 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     vols = list_window(args.site, _parse_when(args.start), _parse_when(args.end))
     if args.max and len(vols) > args.max:
         vols = vols[: args.max]
+    if not vols:
+        print(f"error: {args.site} no tiene volúmenes entre {args.start} y {args.end}", file=sys.stderr)
+        return 1
     dest = Path(args.dest)
     dest.mkdir(parents=True, exist_ok=True)
     for i, vol in enumerate(vols, 1):
