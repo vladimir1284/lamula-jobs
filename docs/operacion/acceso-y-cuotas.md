@@ -17,6 +17,55 @@ la petición lo justifica.
 
 No hay contraseña, no hay recuperación: si lo pierde, emitimos otro y revocamos el viejo.
 
+## Formulario de solicitud (propuesta, sin aprobar)
+
+Pendiente de que el dueño del producto lo apruebe o lo cambie. Criterio con el que está
+escrito: pedir lo mínimo para decidir un nivel de token, y que el prospecto tarde menos de un
+minuto. Cada campo de más es una solicitud menos.
+
+| Campo | Tipo | Obligatorio | Por qué está |
+|---|---|---|---|
+| Correo | texto | sí | Es por donde va el token. Sin cuentas, es el único identificador. |
+| Organización | texto | sí | Decide el nivel: no es lo mismo una universidad que una aerolínea. |
+| Cargo o función | texto corto | no | Afina el nivel sin obligar a nada. |
+| Qué quiere ver | selección múltiple | sí | `un huracán conocido` / `un día concreto de un radar` / `mis propias observaciones` / `otra cosa` |
+| Radar o zona de interés | texto corto | no | Si dice un radar que no es de EEUU, la respuesta es otra conversación. |
+| Comentario | área de texto | no | Donde explican el caso de verdad. |
+
+Más el Turnstile, y una casilla de aceptación del aviso de uso.
+
+Texto de la página, en borrador:
+
+> **Pruebe la cadena completa, con datos de radar reales.**
+>
+> Elija una tormenta del archivo público de los Estados Unidos. Procesamos sus observaciones
+> crudas con el mismo software que corre en un radar operativo, y le mandamos un enlace para
+> ver los productos resultantes en nuestro visor.
+>
+> No hay registro: escríbanos qué quiere ver y le enviamos un enlace de acceso.
+>
+> *El tiempo de cómputo es real —una tormenta de hora y media tarda hora y media en
+> procesarse—, así que los accesos se conceden a mano y con un límite. Los productos
+> generados son para evaluación: no son productos oficiales de ningún servicio
+> meteorológico.*
+
+Esa última frase no es cortesía legal, es la regla de etiquetado de salida de
+[Pendientes](../alcance/pendientes.md) y tiene que estar también en el visor.
+
+Correo de respuesta, en borrador:
+
+> Aquí tiene su acceso al demo de LAMULA: `<enlace>`
+>
+> El código es `<token>` y se pega una sola vez; el navegador lo recuerda. **Guárdelo**: no
+> podemos recuperarlo, aunque sí emitirle otro.
+>
+> Su nivel de acceso permite `<N>` volúmenes por trabajo y `<M>` trabajos. Cada trabajo tarda
+> aproximadamente lo mismo que duró la tormenta que elija, y no hace falta esperar a que
+> termine: el enlace del resultado funciona desde el primer minuto y la línea de tiempo se va
+> llenando sola.
+>
+> Si necesita más, responda a este correo y lo hablamos.
+
 ## Niveles
 
 Valores de partida, ajustables sin migración porque viven en una tabla:

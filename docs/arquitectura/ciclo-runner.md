@@ -100,6 +100,12 @@ PG_DB=lamula_demo  PG_USER=job_<ulid>  R2_BUCKET=lamula-demo-raster
 El watcher no discrimina por nombre de fichero, decodifica por contenido, así que la
 convención de nombres de `nbtcp` da igual.
 
+Dos opciones de `l3proc watch` que vienen a medida y conviene usar (verificadas contra el CLI
+el 2026-11-02): `--heartbeat <fichero>`, que da la señal de vida para detectar un job colgado,
+y `--once`, que procesa el backlog y sale. El `--once` es lo que cierra el paso 8 sin
+heurística. Las credenciales admiten además la forma `PG_PASSWORD_FILE`, que es como se leen
+los secretos del Swarm.
+
 ## 7. Reproducir
 
 ```
@@ -117,9 +123,13 @@ Ruido esperado y benigno en la salida: `Bad data: Message type 0`.
 
 ## 8. Esperar el final
 
-El job termina cuando `play_a2` sale **y** pasan N segundos sin productos nuevos en el
-directorio. Más un timeout duro proporcional al número de volúmenes. Lo que no puede pasar es
-que un ORPG colgado deje el runner ocupado para siempre.
+El job termina cuando `play_a2` sale **y** una pasada final de `l3proc watch --once` sobre el
+directorio no deja nada por procesar. Mejor que esperar N segundos sin productos nuevos: lo de
+antes era una heurística, esto es una comprobación.
+
+Sigue haciendo falta el timeout duro proporcional al número de volúmenes, y el fichero de
+`--heartbeat` del watcher para distinguir "va lento" de "está colgado". Lo que no puede pasar
+es que un ORPG colgado deje el runner ocupado para siempre.
 
 ## 9. Cerrar
 

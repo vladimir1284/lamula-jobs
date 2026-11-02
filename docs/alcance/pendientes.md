@@ -56,7 +56,8 @@ F4, que es cuando entra el primer tercero.
 ## Decisiones que faltan
 
 - Dominio del viewer demo y del hostname del bucket.
-- Texto y campos exactos del formulario de solicitud de acceso.
+- Texto y campos exactos del formulario de solicitud de acceso. Hay un borrador completo en
+  [Acceso y cuotas](../operacion/acceso-y-cuotas.md), pendiente de aprobar o cambiar.
 - Si el enlace de resultado caduca a la vez que el job o sobrevive un tiempo en solo lectura.
 
 ### Umbral de huecos — con datos, falta decidir
