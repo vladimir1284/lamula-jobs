@@ -20,7 +20,7 @@ avanza en 30 min, mirar `ps` y los `modo-*.out` antes de lanzar nada.**
 
 ## Orden de trabajo
 
-**Hechos (2026-11-02):** pasos 1 a 5. Ver [Velocidad de reproducción](../referencia/velocidad-reproduccion.md).
+**Hechos (2026-11-02):** pasos 1 a 6 y 8 (recursos de un solo volumen). Ver [Velocidad de reproducción](../referencia/velocidad-reproduccion.md).
 Quedan 6, 7 y 8, con el ORPG ya libre.
 
 | # | Cuándo | Qué | Entrega |
