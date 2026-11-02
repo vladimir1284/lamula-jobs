@@ -31,10 +31,36 @@ demo live, que es lo que ya está enseñándose a clientes.
 | Duración real de un job de 12 volúmenes | Alimenta la estimación que ve el cliente |
 | Tamaño en disco de productos y COGs por volumen | Dimensionar staging y R2 |
 
-Lo que ya se sabe sin contenedor, del lado de la entrada: un job de doce volúmenes de huracán
-son **unos 240 MB de descarga** y poco más de una hora de reloj a `-T`; una ventana de seis
-horas, más de 1 GB y seis horas de nodo. Detalle por caso en
+## Lo que ya está medido sin contenedor
+
+**Entrada.** Un job de doce volúmenes de huracán son **unos 240-300 MB de descarga** y entre 80
+y 88 minutos de reloj a `-T`. Detalle por caso en
 [Catálogo verificado](../referencia/catalogo-verificado.md).
+
+**Salida y procesamiento.** Medido el 2026-11-02 pasando los diez productos reales de un
+volumen por `l3proc process`, en una máquina de dos núcleos aarch64 —no el nodo del Swarm, así
+que los tiempos valen como orden de magnitud y como reparto entre productos, no como cifra
+operativa—:
+
+| Volumen | Productos crudos | COGs resultantes | CPU de decodificación |
+|---|---|---|---|
+| KTBW en el pico de Ian | 0,86 MB | **4,41 MB** (7 rásters) | 5,6 s |
+| KAMX en un día tranquilo | 0,47 MB | 2,30 MB | 4,2 s |
+
+Reparto dentro del volumen de huracán: N0B 2,5 s y 1,46 MB, N0G 0,9 s y 0,92 MB, DTA 0,7 s y
+0,83 MB, DU3 0,6 s, DAA 0,5 s, EET y DVL por debajo de 0,2 s y 54 KB cada uno. El importador
+de MetPy y Rasterio cuesta 2,4 s, pero se paga una vez: el runner usa `l3proc watch`, no una
+invocación por fichero.
+
+Tres conclusiones:
+
+1. **El procesamiento no es el cuello de botella.** Un job de doce volúmenes son unos 70
+   segundos de CPU de pipeline contra 85 minutos de reproducción del ORPG. Lo que hay que
+   vigilar en D7 es el ORPG, no `l3proc`.
+2. **La huella en R2 es pequeña**: unos 53 MB de COGs por job de doce volúmenes de huracán. El
+   staging de Level II pesa cinco veces más que el resultado.
+3. Queda por medir lo que sí necesita contenedor: la RAM y la CPU del ORPG durante el playback,
+   y el retraso que le mete al `processor` del demo live.
 
 Si el margen libre del VPS resulta menor que unos dos núcleos, D7 vuelve a la mesa. No es una
 decisión irrevocable, es una decisión tomada con los datos de hoy.

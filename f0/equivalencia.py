@@ -86,7 +86,7 @@ def cmd_referencia(args: argparse.Namespace) -> int:
         print(f"  {key}")
     print(f"{got}/{len(ALL_MNEMONICS)} productos en {dest}")
     if missing:
-        print(f"sin clave a esa hora: {', '.join(missing)}  (DU3 solo sale cada tres horas)")
+        print(f"sin clave a esa hora: {', '.join(missing)}  (DU3 solo se emite una vez por hora)")
     return 0
 
 

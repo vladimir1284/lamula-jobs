@@ -79,6 +79,11 @@ Devuelve código 1 si hay diferencias, así que sirve de puerta en un script.
   ([contrato](../docs/referencia/contrato-pipeline.md)).
 - Los diez productos del feed decodifican con el pipeline tal cual: siete rásters, dos de
   fenómenos y el perfil de viento. Es el lado de referencia de la comparación, ya listo.
+- Un volumen de huracán produce **4,41 MB de COGs** y cuesta 5,6 s de CPU de pipeline; un job
+  de doce volúmenes, unos 53 MB y 70 s. El cuello de botella es el ORPG, no `l3proc`
+  ([Límites y recursos](../docs/operacion/limites-recursos.md)).
+- Las ventanas de los cinco casos preparados, elegidas midiendo el eco y no la hora de
+  recalada. Harvey estaba en el día equivocado.
 
 ## Lo que falta y necesita el contenedor
 
