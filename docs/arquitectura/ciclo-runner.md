@@ -126,6 +126,16 @@ que un ORPG colgado deje el runner ocupado para siempre.
 `mrpg shutdown`, esperar a que las tareas operativas salgan (unos 7 s en amd64), borrar los
 directorios del job, subir el log a R2, marcar el job `ready` con su ventana de `vol_time`.
 
+Y una fila más, en el schema del job:
+
+```sql
+UPDATE radars SET last_seen_at = '<vol_time del último volumen>';
+```
+
+Sin eso, el selector de días del viewer sale vacío en cualquier job histórico: ancla su ventana
+de 72 horas a `radars.last_seen_at`, y el pipeline escribe ahí la hora de publicación. El
+porqué, con el fichero y la línea, en [Componentes](componentes.md).
+
 ## Calentamiento: lo que el cliente debe saber
 
 Los algoritmos del ORPG tienen memoria entre volúmenes:

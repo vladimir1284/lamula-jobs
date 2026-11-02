@@ -46,9 +46,27 @@ Misma imagen que el viewer de producción, otra configuración:
 
 Cambios necesarios en el repo del viewer, todos aditivos:
 
-1. Resolver credenciales a partir del token del job (middleware de servidor).
+1. Resolver credenciales a partir del token del job (middleware de servidor). El punto de
+   entrada es `useDal(event)` en `server/dal/index.ts`, que hoy saca host, base, usuario y
+   contraseña de `useRuntimeConfig`. Hay que sacarlos del token en su lugar; `getPgClient` ya
+   cachea por credenciales y no se toca.
 2. Inicializar la línea de tiempo en la ventana del job en vez de "lo más reciente".
 3. Pantalla de estado mientras el job no está listo.
+
+!!! danger "El selector de días de un job histórico sale vacío, y el motivo no es obvio"
+    Revisado el 2026-11-02 en el repo del viewer: `pages/[site]/[product]/[[time]].vue:260`
+    calcula los días disponibles con `dayWindow72h(radar.last_seen_at)`, una ventana de 72
+    horas anclada a `radars.last_seen_at`. Y `ingest/storage/publish.py` escribe en esa columna
+    **la hora de publicación**, no la del volumen. En un job de Irma, los rásters tienen
+    `vol_time` de 2017 y `last_seen_at` de hoy: el selector ofrece los tres últimos días y
+    ninguno tiene datos.
+
+    La solución barata no toca el viewer. Al cerrar el job (paso 9 del
+    [ciclo del runner](ciclo-runner.md)), el runner hace un
+    `UPDATE radars SET last_seen_at = <vol_time del último volumen>` **en el schema del job**.
+    Es una fila de una base del plano demo, el viewer no se entera, y de paso el
+    `FreshnessBadge` pasa a decir la verdad sobre un dato de 2017 en vez de decir que acaba de
+    llegar.
 
 ## Almacenes
 
