@@ -191,6 +191,20 @@ Irma del 2017-09-10). Los comandos están en [F0 en una máquina con Docker](../
 | `nbtcp` cierra los sockets por `AWIPS product completion timer expired` y reconecta tras productos grandes | `nbtcp.log.4491` |
 | **Un producto puede quedar truncado sin error**: un N0B declaraba 401 427 B y se guardaron 399 360 | `f0/integridad.py`; el siguiente N0B, completo, decodifica y su flujo bz2 da 1 329 150 B, igual que el de referencia del bucket |
 
+### Paso 6: decodificar con el pipeline (2026-11-02, corrida `-m` en curso)
+
+Copia de 68 ficheros de `products-m` por `l3proc watch --once --no-publish`: 47 procesados, 21
+fallidos, y los 21 se explican por dos causas.
+
+| Hecho | Evidencia |
+|---|---|
+| **El truncado de N0B es la regla, no la excepción**: 4 de 7 N0B salieron cortados, siempre en múltiplos de 10 240 B | `f0/integridad.py`; `l3proc` los rechaza con un aviso de MetPy y un `ValueError` (el fallo es ruidoso aguas abajo) |
+| La causa es `#define AWIPS_PRODUCT_COMPLETION_TIME 30` en `nbtcp_process_rpg_msgs.c:90`: si el producto no ha llegado entero 30 s después de empezar, `nbtcp` cierra los sockets | El log muestra cada N0B empezando y cerrándose exactamente 30 s después, a ~13 KB/s |
+| **Hipótesis sin probar**: el límite es la velocidad del enlace, `LR=100000` (100 kbit/s) del runbook; 400 KB a esa velocidad son ~32 s. Se sube a `LR=1536000` para la pasada `-T` | Aritmética + el ritmo observado; la prueba es que `products-T` salga sin truncados |
+| Los `GSM…_210602060628[.n]` (230 B, estado general) **no son productos** y `l3proc` los falla: hay que filtrarlos antes de entregar el job al pipeline | 16 de los 21 fallos |
+| `l3proc watch` **consume** su directorio de entrada (mueve a `failed/` lo que falla y borra lo procesado) y guarda estado en `.heartbeat` | Hay que darle una copia, nunca el directorio vivo de `nbtcp` |
+| Salen también ficheros `P173_173_E0_KAMX_<fecha>` (232 B), respuesta de estado de la petición 173; tampoco son productos | Directorio de salida de `nbtcp` |
+
 La RPS list personalizada se derivó del maestro tomando la primera línea de cada uno de los diez
 códigos (153 y 154 con su primer ángulo de elevación). `master_rps_list.dat` aparece en
 `$CFG_DIR` tras ejecutar `nbtcp` una vez.
