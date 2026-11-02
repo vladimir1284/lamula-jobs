@@ -24,8 +24,10 @@ al nodo. La concurrencia se obtiene con réplicas del runner, no con contenedore
 
 ## D4 — Un schema de Postgres y un rol por job (2026-11-01)
 
-Cada job tiene su `job_<ulid>` con el `0001_init.sql` del pipeline aplicado **tal cual**, y un
-rol con `search_path` fijado a ese schema. Motivo: el viewer no cambia ni una consulta, el
+Cada job tiene su `job_<ulid>` con las migraciones del pipeline aplicadas **tal cual**, y un
+rol con `search_path` fijado a ese schema. (Todas las migraciones, no solo la primera: el
+viewer consulta las tablas del mosaico desde la vista de un radar. Ver
+[Aislamiento de datos](../arquitectura/aislamiento-datos.md).) Motivo: el viewer no cambia ni una consulta, el
 contrato de datos no se toca, y borrar un job es `DROP SCHEMA ... CASCADE`. La alternativa
 —una columna `dataset_id` en todas las tablas— es un cambio de contrato que tocaría pipeline,
 viewer y Worker de ops.

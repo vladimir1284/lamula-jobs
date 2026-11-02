@@ -9,9 +9,22 @@ ALTER ROLE job_<ulid> SET search_path = job_<ulid>;
 GRANT USAGE ON SCHEMA job_<ulid> TO job_<ulid>;
 ```
 
-Sobre ese schema se aplica el `db/pg_migrations/0001_init.sql` de `nexrad-l3-pipeline` **sin
-modificarlo**, con el `search_path` apuntando al schema del job. El runner escribe con ese rol;
-el viewer lee con un rol gemelo de solo lectura.
+Sobre ese schema se aplican las migraciones de `db/pg_migrations/` de `nexrad-l3-pipeline`
+**sin modificarlas**, con el `search_path` apuntando al schema del job. El runner escribe con
+ese rol; el viewer lee con un rol gemelo de solo lectura.
+
+!!! note "Las migraciones, todas, no solo la primera"
+    Revisado el 2026-11-02. El `0001_init.sql` no trae extensiones, ni tipos, ni nombres
+    calificados con `public.`, así que se aplica a un schema cualquiera sin tocar una línea: la
+    única cosa global que crea es la secuencia del `BIGSERIAL` de `rasters`, que vive dentro
+    del schema y se va con el `DROP SCHEMA ... CASCADE`.
+
+    Pero hay que aplicar también `0002_mosaic.sql`, aunque un job no haga mosaicos. El motivo
+    está en el viewer: `pages/[site]/[product]/[[time]].vue:73` pide `/api/mosaic/domains` en
+    **la propia vista de un radar**, para saber si ofrecer el enlace al mosaico, y esa ruta
+    hace `SELECT ... FROM mosaic_domains`. Sin la tabla, esa petición falla en cada carga de
+    página. Con las tablas vacías, devuelve una lista vacía y no se ofrece el enlace, que es
+    justo lo que queremos.
 
 Consecuencias, todas buenas:
 

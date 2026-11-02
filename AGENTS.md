@@ -26,9 +26,9 @@ y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.
 
 - **El runner no sabe de dónde vienen los ficheros.** Recibe claves en staging. Meter AWS (o
   cualquier otra fuente) dentro del runner rompe la segunda fuente ya comprometida.
-- **El contrato de datos es del pipeline.** `db/pg_migrations/0001_init.sql` de
-  `nexrad-l3-pipeline` se aplica tal cual en el schema del job. Aquí no se migra ese schema ni
-  se le añaden columnas.
+- **El contrato de datos es del pipeline.** Las migraciones de `db/pg_migrations/` de
+  `nexrad-l3-pipeline` se aplican tal cual en el schema del job —todas, también la del
+  mosaico—. Aquí no se migra ese schema ni se le añaden columnas.
 - **Nada del plano demo escribe en los almacenes de producción.** Base distinta, bucket
   distinto, siempre.
 - **Un job termina o falla, nunca cuelga.** Todo paso lleva timeout, y un runner muerto
