@@ -43,7 +43,7 @@ ORPG](../referencia/orpg-hechos.md) para los valores exactos):
 1. `comms_link.conf` — línea `LN=1` descomentada, `cm_tcp_` → `cm_tcp`, `number_links` arriba.
    **`LR`: no uses 100000.** Con esa velocidad un N0B (~400 KB) tarda más de los 30 s que
    `nbtcp` da a cada producto y llega truncado sin error; la línea original traía 1536000.
-   Hipótesis aún en comprobación, ver [Hechos verificados](../referencia/orpg-hechos.md#verificado-en-f0-2026-11-02).
+   Confirmado en F0 (0 truncados con 1536000), ver [Hechos verificados](../referencia/orpg-hechos.md#verificado-en-f0-2026-11-02).
 2. `tcp.conf` — un enlace libre (el 27) renumerado al 1, servidor, dedicado, con el hostname
    real del contenedor.
 3. `service_class_table` — solo si la RPS list pide más de 160 productos. La nuestra pide diez.

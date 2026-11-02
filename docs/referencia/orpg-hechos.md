@@ -200,7 +200,10 @@ fallidos, y los 21 se explican por dos causas.
 |---|---|
 | **El truncado de N0B es la regla, no la excepción**: 8 de 12 N0B de la pasada `-m` completa salieron cortados (los cuatro enteros fueron cuestión de tiempo), siempre en múltiplos de 10 240 B | `f0/integridad.py`; `l3proc` los rechaza con un aviso de MetPy y un `ValueError` (el fallo es ruidoso aguas abajo) |
 | La causa es `#define AWIPS_PRODUCT_COMPLETION_TIME 30` en `nbtcp_process_rpg_msgs.c:90`: si el producto no ha llegado entero 30 s después de empezar, `nbtcp` cierra los sockets | El log muestra cada N0B empezando y cerrándose exactamente 30 s después, a ~13 KB/s |
-| **Hipótesis sin probar**: el límite es la velocidad del enlace, `LR=100000` (100 kbit/s) del runbook; 400 KB a esa velocidad son ~32 s. Se sube a `LR=1536000` para la pasada `-T` | Aritmética + el ritmo observado; la prueba es que `products-T` salga sin truncados |
+| **Confirmado**: el límite era la velocidad del enlace, `LR=100000` (100 kbit/s) del runbook; 400 KB a esa velocidad son ~32 s. Con `LR=1536000`, pasada `-T`: **0 truncados**, 106 de 106 productos decodificados | `f0/integridad.py` y `l3proc watch` sobre `products-T` |
+| `play_a2 -T`, 12 volúmenes: **4 903 s** (82 min), 132 ficheros. Frente a los 4 670 s de `-m`, solo un 5 % más lento | `run_modes.sh`; la comparación válida de D6 espera a `m2` (`-m` con enlace bueno) |
+| Productos de la pasada `-T`: DAA 11, DTA 11, y 12 de DVL, EET, N0B, N0G, NMD, NST, NVW. **El producto 154 (velocidad) sale como N0G** | `l3proc`: 106 procesados, 0 fallidos |
+| Otros ficheros que no son producto: `RR_003_E0_KAMX_<fecha>` (18 B). `integridad.py` ignora `GSM`, `P173_`, `RR_` | 26 ignorados de 132 |
 | Los `GSM…_210602060628[.n]` (230 B, estado general) **no son productos** y `l3proc` los falla: hay que filtrarlos antes de entregar el job al pipeline | 16 de los 21 fallos |
 | `l3proc watch` **consume** su directorio de entrada (mueve a `failed/` lo que falla y borra lo procesado) y guarda estado en `.heartbeat` | Hay que darle una copia, nunca el directorio vivo de `nbtcp` |
 | Salen también ficheros `P173_173_E0_KAMX_<fecha>` (232 B), respuesta de estado de la petición 173; tampoco son productos | Directorio de salida de `nbtcp` |

@@ -101,8 +101,9 @@ de entregar al pipeline.
 
 Motivo: en la primera ejecución real, `nbtcp` guardó N0B truncados sin ningún error (cierra los
 sockets a los 30 s de empezar cada producto, `nbtcp_process_rpg_msgs.c:90`), 4 de 7 en la
-corrida `-m`. Lo primero evita el fallo —**hipótesis aún sin confirmar**; si la pasada `-T`
-sale con truncados, la causa es otra y esta decisión se reescribe—; lo segundo lo detecta si
+corrida `-m`. Lo primero evita el fallo —**confirmado el 2026-11-02**: con `LR=1536000` la pasada `-T` de 12
+volúmenes salió con 0 truncados y 106 de 106 productos decodificados, frente a 8 de 12 N0B
+truncados con `LR=100000`—; lo segundo lo detecta si
 reaparece por cualquier otra causa. Una sola de las dos deja un fallo silencioso o un job que
 falla sin remedio. Sin ninguna, un COG con un hueco sin explicación.
 

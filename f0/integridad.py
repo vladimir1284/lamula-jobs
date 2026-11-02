@@ -9,9 +9,8 @@ longitud del mensaje (4), todo big-endian y la longitud cuenta desde el inicio d
     f0/integridad.py f0-run/products-m
     f0/integridad.py f0-run/products-m --solo-malos
 
-Sale con código 1 si algún producto de más de 1 KB está truncado. Los GSM de 230 bytes
-(estado general, sin encabezado de producto) y otros ficheros que no traen el encabezado
-se cuentan aparte.
+Sale con código 1 si algún producto de más de 1 KB está truncado. Los ficheros que no son
+productos (`GSM…`, `P173_…`, `RR_…`) se cuentan aparte como «ignorado».
 """
 
 from __future__ import annotations
@@ -21,10 +20,15 @@ import sys
 from pathlib import Path
 
 WMO_HEADER_SIZE = 30
+# Ficheros que nbtcp deja junto a los productos y que no lo son: estado general, respuesta de
+# la petición 173 y mensajes de petición de respuesta (RR).
+NO_PRODUCTO = ("GSM", "P173_", "RR_")
 
 
 def revisar(path: Path) -> tuple[str, int, int]:
     """Devuelve (estado, declarado, real) para un producto."""
+    if path.name.startswith(NO_PRODUCTO) or "_GSM" in path.name:
+        return "ignorado", 0, path.stat().st_size
     raw = path.read_bytes()
     real = len(raw) - WMO_HEADER_SIZE
     if real < 18:
