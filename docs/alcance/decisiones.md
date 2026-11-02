@@ -47,6 +47,19 @@ arriesgar pérdida de radiales por acelerar algo que el cliente no está mirando
 Matiz que conviene explotar: como el watcher publica según llegan los productos, el enlace
 funciona **mientras** el job corre y la línea de tiempo se va llenando.
 
+**Evidencia nueva del 2026-11-02, que no revierte la decisión pero la pone sobre la mesa.**
+Leído el fuente de `play_a2`: nada en el reproductor descarta radiales por ir rápido, `-T` no
+significa "a tiempo real" sino "simula también el hueco entre volúmenes", y existe `-m`, que
+reproduce a la máxima velocidad con control de flujo del propio RPG. Con los números de las
+ventanas propuestas, `-T` cuesta unos 85 minutos de nodo por job, mientras que saltarse los
+huecos costaría del orden de 60 y `-m` posiblemente mucho menos.
+
+No se cambia nada hasta que F0 mida las tres y `f0/equivalencia.py` diga si los productos son
+los mismos. Si lo son, el motivo de D6 —"no arriesgar pérdida de radiales por acelerar algo que
+el cliente no mira"— deja de aplicar tal cual está escrito, y el demo pasa de tardar una hora y
+media a tardar minutos. Eso cambia también las cuotas y hasta si el demo tiene que ser
+asíncrono.
+
 ## D7 — Mismo nodo del Swarm que producción (2026-11-01)
 
 Sin nodo dedicado. Motivo: decisión del dueño del producto; no hay presupuesto para otro VPS

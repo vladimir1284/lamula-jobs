@@ -12,7 +12,9 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
 2. `nbtcp -A -b` con una RPS list recortada a los diez productos del pipeline, y el nombre de
    esa lista por stdin. El porqué de cada opción, leído del fuente, en
    [Hechos verificados del ORPG](../referencia/orpg-hechos.md).
-3. `play_a2 -T -p playlist` con uno o dos volúmenes.
+3. `play_a2 -p playlist` con uno o dos volúmenes, y después la comparación de los tres modos
+   de velocidad (`-T`, sin `-T`, `-m`): duración de cada uno y, con `f0/equivalencia.py`, si
+   los productos salen iguales. De ahí sale si D6 sigue en pie.
 4. Decodificar los productos resultantes con `l3proc process`.
 
 **Puertas:**
@@ -30,6 +32,8 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
   `f0/equivalencia.py`. Buscar la pareja tampoco cuesta nada —los 302 volúmenes de KAMX del
   2026-11-01 tienen su Level III con el mismo sello de tiempo—, ver
   [Catálogo verificado](../referencia/catalogo-verificado.md).
+- **Velocidad**: los mismos volúmenes por `-T`, sin `-T` y `-m`, con los productos comparados
+  entre sí. Si son idénticos, el demo deja de costar hora y media por job.
 - Las medidas de recursos de [Límites y recursos](../operacion/limites-recursos.md).
 
 Nada de lo que sigue se escribe hasta que esto pase.

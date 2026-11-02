@@ -24,6 +24,28 @@ del ORPG. Acepta `.bz2`, `.gz`, `.ar2v` y `.raw`.
 Con datos históricos y **sin `-R`**, el `vol_time` del producto es el de la observación y la
 hora de generación es la actual. Es lo que queremos.
 
+### Cómo pacea de verdad, leído del fuente (2026-11-02)
+
+`src/cpc102/tsk066/pa_playback.c`, función `Speed_control`, llamada una vez por mensaje de
+radial:
+
+- El tiempo que espera sale de comparar el tiempo de los datos con el del reloj, dividido por
+  la velocidad de `-x`. Nada en `play_a2` descarta radiales por ir rápido: `-x` solo escala
+  esa cuenta. Si se pierden datos, se pierden aguas abajo, en la ingesta del RPG.
+- **Cada espera está topada en 200 ms**, con un comentario en el código que dice que sin ese
+  tope se perdían cortes de un volumen concreto de 2017. O sea, un hueco de diez minutos no se
+  espera de una sentada: se reparte en esperas de 200 ms entre los mensajes siguientes.
+- **`-T` no significa "a tiempo real"**, significa que el tiempo *entre* volúmenes también se
+  simula. Sin `-T`, el reloj de referencia se reancla al empezar cada volumen, así que los
+  huecos entre volúmenes —y el tiempo muerto del archivo— sencillamente no se esperan.
+- `-m` es otra cosa y merece una prueba: reproduce a la máxima velocidad **con control de
+  flujo**, gobernado por un evento del RPG que confirma cortes completados. Es decir, va tan
+  rápido como el RPG admite, no tan rápido como pueda el disco.
+- `-w ms` fija una espera mínima entre radiales, por si hace falta frenar a mano.
+
+Tres modos distintos, entonces, y solo uno está probado por nosotros (ninguno): `-T` (duración
+igual a la ventana real), sin `-T` (se saltan los huecos) y `-m` (lo que el RPG aguante).
+
 Sin `-p`, los ficheros se secuencian por el timestamp del nombre; ficheros de varios radares
 que se solapen en el tiempo se entrelazan. Una razón más para usar playlist.
 

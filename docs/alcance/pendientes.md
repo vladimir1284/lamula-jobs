@@ -21,8 +21,16 @@ Huecos abiertos, ordenados por lo que bloquean.
   (`SDUS52 KMFL 010000\r\r\nN0BAMX\r\r\n`). Lo demás del producto decodifica igual con y
   sin ella; lo único que se pierde es `siteID`, que es justamente lo que el pipeline necesita
   (punto de arriba).
-- **Velocidad segura de reproducción.** `-T` es lo documentado; falta saber si `-x` mayor que 1
-  pierde radiales.
+- **Velocidad segura de reproducción.** Replanteado el 2026-11-02 con el fuente delante
+  ([Hechos verificados del ORPG](../referencia/orpg-hechos.md)): `play_a2` no descarta nada por
+  ir rápido —`-x` solo escala la cuenta de la espera—, `-T` no es "tiempo real" sino "simula
+  también el hueco entre volúmenes", y existe `-m`, que va a la máxima velocidad **con control
+  de flujo del propio RPG**.
+
+  Lo que F0 tiene que medir es, por tanto, otra cosa: los mismos doce volúmenes por los tres
+  caminos (`-T`, sin `-T`, `-m`), comparando duración y, con `f0/equivalencia.py`, que los
+  productos salgan iguales. Si salen iguales, la diferencia es puro tiempo de nodo. Ver el
+  matiz añadido a D6 en [Decisiones](decisiones.md).
 
 ## Bloqueantes de la apertura a terceros
 
