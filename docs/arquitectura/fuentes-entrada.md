@@ -14,7 +14,23 @@ Lo verificado en `lamula-process/src/lib/aws-explorer/`, que se reaprovecha:
 - El sufijo `_V06` filtra lo que el ORPG B24 puede digerir (D9).
 - `src/lib/platform/known-sites.json` trae lat/lon/altM de los sitios US, ocho del IDEAM
   colombiano y nueve del INSMET cubano. Sirve de catálogo del selector y de fuente para las
-  líneas de `change_radar.dat`.
+  líneas de `change_radar.dat`, aunque **no basta para escribir una**: esa línea quiere la
+  elevación en **pies** y el `rpg_id` del sitio (el `302` del ejemplo de kmlb), y el catálogo
+  solo tiene metros y ni rastro del identificador. Para los sitios US da igual, que ya vienen
+  en `change_radar.dat`; hace falta el día que entre el radar propio de un cliente. Ojo además
+  con que `altM` es cota del terreno, no altura de antena (ver
+  [Contrato con el pipeline](../referencia/contrato-pipeline.md)).
+
+Coste de listar, medido el 2026-11-02 desde el nodo:
+
+| Consulta | Peticiones | Resultado | Tiempo |
+|---|---|---|---|
+| Qué sitios tienen datos un día (`delimiter=/`) | 1 | 157 prefijos | 183 ms |
+| Volúmenes de un sitio en un día | 1 | 243 claves | 172 ms |
+
+Las dos consultas que necesita el selector son una sola petición cada una y tardan menos de
+200 ms. No hace falta cachear el catálogo ni copiarlo a una base: `jobs-api` puede listar en
+vivo (D10).
 
 Se **porta**, no se comparte: aquello es Svelte y el viewer es Vue, y hoy no hay paquete común.
 Son unas doscientas líneas entre el listado paginado, la regex de timestamp y el catálogo.
