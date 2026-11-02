@@ -47,6 +47,11 @@ ORPG](../referencia/orpg-hechos.md) para los valores exactos):
 
 Los cambios entran con `mrpg -v -p startup`, que es el mismo arranque del paso 3.
 
+!!! warning "`mrpg -p startup` no sale"
+    El arranque termina en unos 2 s (línea `RPG startup completed`) pero el proceso `mrpg` sigue
+    vivo. Encadenado a un pipe (`| tail`) la orden no vuelve nunca. Redirige a fichero y espera
+    esa línea; no esperes a que el proceso termine.
+
 ## Paso a paso
 
 ### 1. Preparar las entradas, fuera del contenedor
@@ -59,7 +64,11 @@ mkdir -p f0-run/ar2in f0-run/products f0-run/cogs
 f0/catalogo.py fetch KAMX 2017-09-10T17:00 2017-09-10T18:30 f0-run/ar2in --max 12
 ```
 
-`fetch` deja los volúmenes y escribe la `playlist` que come `play_a2`. KAMX/Irma es el caso de
+`fetch` deja los volúmenes y escribe una `playlist`, **que no sirve para estos volúmenes**:
+`play_a2 -p` trata todo fichero de la lista como bz2 de volumen entero y falla con
+`BZ2_bzRead failed (error -5)`. Los del bucket son formato LDM (cabecera `AR2V` y bloques bz2) y
+solo se reconocen con `play_a2 -d <directorio>`, que clasifica por nombre. Medido el 2026-11-02;
+ver [Hechos verificados](../referencia/orpg-hechos.md#verificado-en-f0-2026-11-02). KAMX/Irma es el caso de
 arranque porque es el más denso; para la primera pasada sirve cualquiera, y para ir rápido
 bastan dos volúmenes (`--max 2`).
 
@@ -71,6 +80,7 @@ bastan dos volúmenes (`--max 2`).
 docker login ghcr.io
 docker run -d --name orpg-f0 --hostname orpg-f0 --stop-timeout 30 \
   -v "$PWD/f0-run:/data" ghcr.io/vladimir1284/orpg:b24
+# sin login en GHCR sirve la imagen local de producción de radar-orpg-dev: orpg-prod:b24
 docker logs -f orpg-f0        # termina en "RPG System Startup Completed", ~10 s
 ```
 
@@ -114,7 +124,9 @@ después.
 
 ```bash
 echo rps_lamula.list | nbtcp -A -b -D /data/products -s KAMX -p 4491 -w passwd orpg-f0
-mon_nb 1                              # estado del enlace
+# El ÚLTIMO argumento decide la interfaz: de 2 caracteres o menos es un enlace cm_tcp (falla
+# buscando nbtcp_comms_link.conf); de más, un host y se usa la interfaz nativa. Es el hostname.
+mon_nb 1                              # estado del enlace; interactivo, no lo lances sin timeout
 tail -f nbtcp.log.4491                # errores
 ```
 
@@ -133,7 +145,7 @@ tail -f nbtcp.log.4491                # errores
 ### 5. Reproducir
 
 ```bash
-play_a2 -T -p /data/ar2in/playlist
+play_a2 -T -d /data/ar2in
 ```
 
 Sin `-R`, para que el producto conserve el `vol_time` original. `Bad data: Message type 0` en la
@@ -142,9 +154,9 @@ salida es ruido esperado y benigno.
 Después, la medida que reabre D6: los **mismos** volúmenes por los tres caminos, cronometrados.
 
 ```bash
-play_a2 -T -p /data/ar2in/playlist     # ritmo real, simula también el hueco entre volúmenes
-play_a2 -p /data/ar2in/playlist        # sin el hueco
-play_a2 -m -p /data/ar2in/playlist     # máxima velocidad, control de flujo del propio RPG
+play_a2 -T -d /data/ar2in     # ritmo real, simula también el hueco entre volúmenes
+play_a2 -d /data/ar2in        # sin el hueco
+play_a2 -m -d /data/ar2in     # máxima velocidad, control de flujo del propio RPG
 ```
 
 Guarda la salida de cada modo en un directorio distinto (`-D` apunta a otro sitio, o copia el

@@ -14,3 +14,6 @@ data/
 
 # Salida de las pruebas de F0
 f0-run/
+
+# salidas locales de F0 (volúmenes, productos, COGs)
+f0-run/

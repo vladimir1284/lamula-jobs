@@ -10,8 +10,8 @@ del ORPG. Acepta `.bz2`, `.gz`, `.ar2v` y `.raw`.
 
 | Opción | Efecto |
 |---|---|
-| `-p playlist` | Lista explícita de ficheros, en orden. No exige convención de nombres. |
-| `-d DIR` | Directorio; **recorre subdirectorios** salvo que se use `-r` o `-s`. |
+| `-p playlist` | Lista explícita de ficheros, en orden. **Solo para bz2 de volumen entero**: no reconoce el formato LDM del bucket de Unidata (ver abajo). |
+| `-d DIR` | Directorio; **recorre subdirectorios** salvo que se use `-r` o `-s`. Es el único modo que acepta los volúmenes de `unidata-nexrad-level2`. |
 | `-s fichero` | Empezar por ese fichero. |
 | `-r PREFIJO` | Solo ficheros con ese prefijo. |
 | `-n N` | Solo N volúmenes. |
@@ -47,7 +47,8 @@ Tres modos distintos, entonces, y solo uno está probado por nosotros (ninguno):
 igual a la ventana real), sin `-T` (se saltan los huecos) y `-m` (lo que el RPG aguante).
 
 Sin `-p`, los ficheros se secuencian por el timestamp del nombre; ficheros de varios radares
-que se solapen en el tiempo se entrelazan. Una razón más para usar playlist.
+que se solapen en el tiempo se entrelazan. Con `-d` hay que dar a cada job **un directorio
+propio con solo sus volúmenes**.
 
 Mensajes benignos documentados: `Bad data: Message type 0` (metadato moderno que `play_a2`
 ignora) y desfases en la fecha mostrada para volúmenes creados con `save_volume_file`.
@@ -171,3 +172,25 @@ de granizo. Por esta vía sí existirían.
 El parser habría que escribirlo, pero menos de lo que parecía: MetPy 1.7.1 tiene los códigos
 59, 61 y 62 en su tabla de productos (comprobado el 2026-11-02), así que los abre y expone sus
 bloques. Lo que falta es el mapeo a `phenomena`, comparable a `_parse_nst` y `_parse_nmd`.
+
+
+## Verificado en F0 (2026-11-02)
+
+Primera ejecución real, en el contenedor `orpg-f0` (imagen `orpg-prod:b24`, KAMX, volúmenes de
+Irma del 2017-09-10). Los comandos están en [F0 en una máquina con Docker](../implementacion/f0-ejecucion.md).
+
+| Hecho | Evidencia |
+|---|---|
+| `nbtcp -A -b -D dir -s KAMX -p 4491 -w passwd orpg-f0` con `echo lista \|` **arranca sin terminal** y vuelve con código 0 | `nbtcp.log.4491`: sockets conectados, login, RPS list enviada con 10 productos |
+| El último argumento decide la interfaz: ≤2 caracteres es enlace `cm_tcp`, más es host y usa la nativa | `nbtcp.c:803-830`; con `1` falla buscando `nbtcp/nbtcp_comms_link.conf` |
+| Con `-A` no hay pregunta de convención y el originador de KAMX sale `KMFL` | Salida de `nbtcp`: `WMO Originator for Site: KAMX: KMFL`; ficheros `KMFL_SDUS82_…AMX_…` |
+| `change_radar -r kamx -S -R` + `mrpg -p -v startup` deja las coordenadas de KAMX | `RDA LATITUDE: 25611`, `RDA LONGITUDE: -80413` |
+| Con `-p`, los volúmenes del bucket **no se leen**: `BZ2_bzRead failed (error -5)` | `pa_files.c:565` marca todo fichero de playlist como `AP_NCDC_TYPE`; `-d` los clasifica por nombre y sí funciona |
+| `mrpg -p -v startup` termina en ~2 s pero el proceso no sale | `ps` tras `startup completed` |
+| `play_a2 -m` no es rápido: **2 volúmenes en 741 s** (~6 min/volumen) | Medida de 2 volúmenes; la de 12 en curso |
+| `nbtcp` cierra los sockets por `AWIPS product completion timer expired` y reconecta tras productos grandes | `nbtcp.log.4491` |
+| **Un producto puede quedar truncado sin error**: un N0B declaraba 401 427 B y se guardaron 399 360 | `f0/integridad.py`; el siguiente N0B, completo, decodifica y su flujo bz2 da 1 329 150 B, igual que el de referencia del bucket |
+
+La RPS list personalizada se derivó del maestro tomando la primera línea de cada uno de los diez
+códigos (153 y 154 con su primer ángulo de elevación). `master_rps_list.dat` aparece en
+`$CFG_DIR` tras ejecutar `nbtcp` una vez.

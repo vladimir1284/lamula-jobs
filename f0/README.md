@@ -15,6 +15,7 @@ la cabecera PEP 723.
 | `equivalencia.py` | Huella de un producto con el decodificador del pipeline, y comparación de dos huellas |
 | `comprobar.py` | Repite contra el bucket real todas las comprobaciones que esta fase da por sabidas |
 | `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
+| `integridad.py` | Detecta productos truncados: longitud declarada en la cabecera Level III contra tamaño real |
 
 ### `catalogo.py`
 

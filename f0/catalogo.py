@@ -372,6 +372,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     playlist = dest / "playlist"
     playlist.write_text("".join(f"{dest.resolve() / v.name}\n" for v in vols))
     print(playlist)
+    print("aviso: play_a2 -p no lee este formato (LDM); usa play_a2 -d " + str(dest), file=sys.stderr)
     return 0
 
 
