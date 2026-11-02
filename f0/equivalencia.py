@@ -179,6 +179,10 @@ def cmd_huella(args: argparse.Namespace) -> int:
     files = sorted(p for p in (target.iterdir() if target.is_dir() else [target]) if p.is_file())
     huellas, ignorados = [], []
     for path in files:
+        # nbtcp deja junto a los productos ficheros que no lo son (estado, respuesta 173, RR)
+        if path.name.startswith(("GSM", "P173_", "RR_")) or "_GSM" in path.name:
+            ignorados.append(path.name)
+            continue
         h = huella_fichero(path, decoders)
         if h is None:
             ignorados.append(path.name)
