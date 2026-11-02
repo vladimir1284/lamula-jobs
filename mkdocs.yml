@@ -59,6 +59,7 @@ nav:
   - Implementación:
       - Fases: implementacion/fases.md
       - F0 en una máquina con Docker: implementacion/f0-ejecucion.md
+      - Plan de trabajo autónomo: implementacion/plan-autonomo.md
   - Referencia:
       - Hechos verificados del ORPG: referencia/orpg-hechos.md
       - Catálogo verificado: referencia/catalogo-verificado.md

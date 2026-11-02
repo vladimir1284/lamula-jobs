@@ -12,7 +12,7 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
 2. `nbtcp -A -b` con una RPS list recortada a los diez productos del pipeline, y el nombre de
    esa lista por stdin. El porqué de cada opción, leído del fuente, en
    [Hechos verificados del ORPG](../referencia/orpg-hechos.md).
-3. `play_a2 -p playlist` con uno o dos volúmenes, y después la comparación de los tres modos
+3. `play_a2 -d directorio` (no `-p`: no lee el formato del bucket) con uno o dos volúmenes, y después la comparación de los tres modos
    de velocidad (`-T`, sin `-T`, `-m`): duración de cada uno y, con `f0/equivalencia.py`, si
    los productos salen iguales. De ahí sale si D6 sigue en pie.
 4. Decodificar los productos resultantes con `l3proc process`.
@@ -34,6 +34,8 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
   [Catálogo verificado](../referencia/catalogo-verificado.md).
 - **Velocidad**: los mismos volúmenes por `-T`, sin `-T` y `-m`, con los productos comparados
   entre sí. Si son idénticos, el demo deja de costar hora y media por job.
+- **Integridad**: ningún producto truncado (`f0/integridad.py`) en ninguno de los tres modos.
+  Primera pasada, con `LR=100000`: 4 de 7 N0B truncados. Ver D11.
 - Las medidas de recursos de [Límites y recursos](../operacion/limites-recursos.md).
 
 Nada de lo que sigue se escribe hasta que esto pase.
@@ -41,7 +43,9 @@ Nada de lo que sigue se escribe hasta que esto pase.
 ## F1 — Runner ejecutable
 
 Imagen `job-runner` (ORPG + pipeline) y un CLI que ejecuta un job completo desde una lista de
-claves, sin cola ni API. Configuración de `nbtcp` y RPS list horneadas en la imagen.
+claves, sin cola ni API. Configuración de `nbtcp` y RPS list horneadas en la imagen, con `LR`
+alto (D11). El CLI filtra los ficheros que no son productos (`GSM…`, `P173_…`), pasa
+`integridad.py` antes de decodificar y le da a `l3proc watch` una copia, porque lo consume.
 
 **Puerta:** doce volúmenes de un huracán entran y salen como productos en un schema de
 Postgres y COGs en R2, con el `vol_time` correcto y la georreferenciación correcta.

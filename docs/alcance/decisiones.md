@@ -90,3 +90,19 @@ inferior del catálogo seleccionable es por radar, entre 2012 y 2014. Medidas en
 pudiera hacerlo. Motivo: el job necesita fijar su lista de claves de forma autoritativa para
 validarla y para poder reintentar; listar también en el cliente duplica la lógica y ata el
 demo a que el bucket mantenga CORS.
+
+## D11 — Un job no se da por bueno sin comprobar la integridad de sus productos (2026-11-02)
+
+Dos cosas, las dos en F1. **La imagen del runner hornea `LR` alto en `comms_link.conf`**
+(1536000, no el 100000 del primer runbook), y **`f0/integridad.py` es una puerta de cada job**:
+la longitud declarada en la cabecera de cada producto tiene que coincidir con el tamaño en disco,
+y un producto de más de 1 KB que no cuadre falla el job. Los `GSM…` y `P173_…` se filtran antes
+de entregar al pipeline.
+
+Motivo: en la primera ejecución real, `nbtcp` guardó N0B truncados sin ningún error (cierra los
+sockets a los 30 s de empezar cada producto, `nbtcp_process_rpg_msgs.c:90`), 4 de 7 en la
+corrida `-m`. Lo primero evita el fallo —**hipótesis aún sin confirmar**; si la pasada `-T`
+sale con truncados, la causa es otra y esta decisión se reescribe—; lo segundo lo detecta si
+reaparece por cualquier otra causa. Una sola de las dos deja un fallo silencioso o un job que
+falla sin remedio. Sin ninguna, un COG con un hueco sin explicación.
+
