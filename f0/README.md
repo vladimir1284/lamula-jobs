@@ -16,6 +16,7 @@ la cabecera PEP 723.
 | `comprobar.py` | Repite contra el bucket real todas las comprobaciones que esta fase da por sabidas |
 | `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
 | `integridad.py` | Detecta productos truncados: longitud declarada en la cabecera Level III contra tamaño real |
+| `coordenadas.py` | Comprueba que cada producto trae el `siteID` y el `lat`/`lon` esperados (regla de verificación de coordenadas) |
 
 ### `catalogo.py`
 

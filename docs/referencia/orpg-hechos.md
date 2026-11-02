@@ -204,6 +204,7 @@ fallidos, y los 21 se explican por dos causas.
 | `play_a2 -T`, 12 volúmenes: **4 903 s** (82 min), 132 ficheros. Frente a los 4 670 s de `-m`, solo un 5 % más lento | `run_modes.sh`; la comparación válida de D6 espera a `m2` (`-m` con enlace bueno) |
 | Productos de la pasada `-T`: DAA 11, DTA 11, y 12 de DVL, EET, N0B, N0G, NMD, NST, NVW. **El producto 154 (velocidad) sale como N0G** | `l3proc`: 106 procesados, 0 fallidos |
 | Otros ficheros que no son producto: `RR_003_E0_KAMX_<fecha>` (18 B). `integridad.py` ignora `GSM`, `P173_`, `RR_` | 26 ignorados de 132 |
+| **Coordenadas verificadas**: los 106 productos de `-T` traen `siteID=AMX`, `lat=25.611`, `lon=-80.413`, y contra las de KMLB (el sitio de ejemplo de la imagen) la herramienta rechaza los 106 | `f0/coordenadas.py` (control positivo y negativo); `change_radar` + `mrpg -p startup` sí surten efecto |
 | Los `GSM…_210602060628[.n]` (230 B, estado general) **no son productos** y `l3proc` los falla: hay que filtrarlos antes de entregar el job al pipeline | 16 de los 21 fallos |
 | `l3proc watch` **consume** su directorio de entrada (mueve a `failed/` lo que falla y borra lo procesado) y guarda estado en `.heartbeat` | Hay que darle una copia, nunca el directorio vivo de `nbtcp` |
 | Salen también ficheros `P173_173_E0_KAMX_<fecha>` (232 B), respuesta de estado de la petición 173; tampoco son productos | Directorio de salida de `nbtcp` |
