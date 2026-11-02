@@ -78,6 +78,9 @@ pipeline live.
 - Subida de ficheros del cliente (llega con la herramienta de conversión a Level II).
 - Productos que el feed público no distribuye pero el ORPG sí genera: HI (59), TVS (61), SS
   (62). El parser del pipeline no los lee. Es un diferenciador claro frente al demo live, y un
-  candidato a fase propia más adelante.
+  candidato a fase propia más adelante. Matiz comprobado el 2026-11-02: **MetPy ya tiene los
+  tres en su tabla de productos**, así que los abre y expone sus bloques; lo que falta en
+  nuestro lado es el mapeo a registros de `phenomena`, del tamaño de los que ya existen para
+  NST y NMD, no un decodificador desde cero.
 - Mosaico multi-radar en jobs: un job es de un solo radar.
 - Capas de viento y rayos históricas (GFS y GLM archivados).

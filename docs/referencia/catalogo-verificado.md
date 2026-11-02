@@ -191,7 +191,11 @@ petición `Range` de 64 KiB basta en las dos disposiciones que conviven en el ar
 
 Un día entero de un sitio se perfila con ~2 MB de tráfico en vez de 6 GB.
 
+Todas estas afirmaciones se vuelven a comprobar con `f0/comprobar.py`, que las repite contra el
+bucket real y devuelve 1 si alguna ha dejado de ser cierta.
+
 ```bash
+f0/comprobar.py
 f0/catalogo.py cases --vcp
 f0/catalogo.py eras KEVX --desde 2010 --hasta 2016
 f0/catalogo.py ventana KTBW 2022-09-28T00:00 2022-09-29T00:00 -n 12

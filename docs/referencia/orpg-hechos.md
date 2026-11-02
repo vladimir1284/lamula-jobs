@@ -90,4 +90,8 @@ trabajo.
 HI (59, granizo), TVS (61) y SS (62, estructura de tormenta). El pipeline los dio por fuera de
 alcance porque el bucket de Unidata no los lleva —barrido de junio y julio de 2026, cero
 claves—, y por eso `phenomena.attrs` no trae VIL por celda, eco tope por celda ni probabilidad
-de granizo. Por esta vía sí existirían. El parser habría que escribirlo.
+de granizo. Por esta vía sí existirían.
+
+El parser habría que escribirlo, pero menos de lo que parecía: MetPy 1.7.1 tiene los códigos
+59, 61 y 62 en su tabla de productos (comprobado el 2026-11-02), así que los abre y expone sus
+bloques. Lo que falta es el mapeo a `phenomena`, comparable a `_parse_nst` y `_parse_nmd`.

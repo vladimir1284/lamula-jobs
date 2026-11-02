@@ -13,6 +13,7 @@ la cabecera PEP 723.
 |---|---|
 | `catalogo.py` | Listar, medir y descargar del bucket `unidata-nexrad-level2` |
 | `equivalencia.py` | Huella de un producto con el decodificador del pipeline, y comparación de dos huellas |
+| `comprobar.py` | Repite contra el bucket real todas las comprobaciones que esta fase da por sabidas |
 | `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
 
 ### `catalogo.py`
@@ -64,6 +65,21 @@ minutos dan diferencias en todos los productos. O sea, la herramienta ni falla n
 más. Lo que falta es el otro lado, que necesita el contenedor.
 
 Devuelve código 1 si hay diferencias, así que sirve de puerta en un script.
+
+### `comprobar.py`
+
+Cada afirmación de las páginas de referencia tiene aquí una comprobación que la repite contra
+el bucket real: el 403 de `noaa-nexrad-level2`, los sufijos por era, el VCP leído con una
+petición Range, el fallo de `siteID` sin encabezado WMO, la altura en pies de ABX, la
+profundidad del archivo de Level III y las parejas Level II/Level III.
+
+```bash
+f0/comprobar.py            # las ocho, alrededor de un minuto
+f0/comprobar.py wmo altura # solo esas
+```
+
+Devuelve 1 si alguna falla. Conviene pasarlo antes de fiarse de un número de hace semanas: el
+bucket y MetPy cambian por su cuenta.
 
 ## Lo que ya está respondido sin contenedor
 
