@@ -115,7 +115,7 @@ magnitud de diferencia entre ellos. No hay otra lectura posible: el número es e
 
 Dónde duele: `ingest/mosaic/service.py:388` pasa ese valor como `antenna_h_m` y
 `ingest/mosaic/quality.py:47` lo suma en metros a la altura del haz, que después se pondera con
-una altura de referencia de 4000 m. Para un radar costero el error son 78 m y no se nota. Para
+una altura de referencia de 4000 m. Para un radar costero el error son 178 m (declara 256, que son 78 m) y no se nota. Para
 ABX son **4,1 km de más**, que a esa referencia le hunde el peso en todo su dominio. El mosaico
 multi-radar de montaña está pesando mal.
 

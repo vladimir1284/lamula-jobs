@@ -26,6 +26,49 @@ y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.
 `docs/implementacion/f0-ejecucion.md`**: tiene los comandos literales en orden, las puertas de
 cada paso y dónde se anota cada resultado. F0 no necesita Postgres, ni R2, ni el Swarm.
 
+## Estado al 2026-11-02 — por dónde seguir
+
+Esta sección es el punto de partida de la próxima sesión. **Todo lo que hace falta saber está en
+el repo**: no hay notas, medidas ni acuerdos guardados fuera de aquí.
+
+**La Fase 0 sigue sin ejecutarse.** La sesión que preparó todo lo demás no tenía acceso al
+demonio de Docker (`permission denied ... /var/run/docker.sock`). Lo que se podía responder
+leyendo el catálogo, midiendo con las herramientas de `f0/` o leyendo el fuente del CODE está
+respondido y documentado; lo del ORPG está pendiente entero.
+
+Si esta máquina **sí** tiene Docker, el punto de entrada es
+`docs/implementacion/f0-ejecucion.md`: comandos literales en orden, la puerta de cada paso y
+dónde se anota cada resultado. Dos cosas que solo están ahí y conviene saber antes de empezar:
+
+- **F0 no necesita Postgres, ni R2, ni el Swarm.** `l3proc process` sin `--publish` y
+  `l3proc watch --no-publish` escriben los COG en disco. F0 corre entero en un portátil.
+- **La imagen `orpg:b24` no trae la configuración de `nbtcp`.** Se hace a mano en F0 y se
+  hornea en la imagen del runner en F1.
+
+Antes de fiarte de cualquier número de estas páginas, pasa `f0/comprobar.py`: repite las ocho
+comprobaciones contra el bucket real en alrededor de un minuto. El bucket y MetPy cambian por su
+cuenta.
+
+### Esperando al dueño del producto
+
+Nada de esto se ejecuta por iniciativa propia:
+
+| Qué | Dónde está |
+|---|---|
+| Dos borradores de consulta de licencia, sin enviar | `correspondencia/` — NWS y Universidad de Oklahoma. La dirección de OU está sin rellenar a propósito: se busca en ou.edu/otc, no se inventa |
+| D6 (velocidad de reproducción), a re-decidir **después** de que F0 mida `-T`, sin `-T` y `-m` | `docs/alcance/decisiones.md` |
+| `-A` con el enrutado real del NWS, o parchear el pipeline con un `site_id` explícito | `docs/referencia/contrato-pipeline.md` |
+| Umbral de huecos, `max_bytes` por job, texto del formulario de acceso | `docs/alcance/pendientes.md` |
+| Los siete artículos de `linkedin/`, sin publicar: describen un demo comercial sobre el CODE | `linkedin/` — el 07 lleva nota explícita |
+
+### Lo que ya salió de este repo
+
+- **Issue abierto** en `nexrad-l3-pipeline`:
+  [#8](https://github.com/vladimir1284/nexrad-l3-pipeline/issues/8), la altura del radar
+  guardada en pies dentro de `height_m`. No se ha tocado ese repo; solo se reportó.
+- Los demás cambios en repos ajenos siguen siendo propuestas, listados en
+  `docs/alcance/pendientes.md`.
+
 ## Reglas que no se negocian
 
 - **El runner no sabe de dónde vienen los ficheros.** Recibe claves en staging. Meter AWS (o
