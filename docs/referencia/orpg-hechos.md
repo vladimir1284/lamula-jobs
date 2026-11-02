@@ -137,7 +137,7 @@ atender.
 Receta que resulta de todo esto, para probar en F0:
 
 ```bash
-echo rps_lamula.list | nbtcp -A -b -d /data/products/<job> -s <ICAO> -p 4491 -w <clave> <host>
+echo rps_lamula.list | nbtcp -A -b -D /data/products/<job> -s <ICAO> -p 4491 -w <clave> <host>
 ```
 
 El encabezado que añade `-A` mide **30 bytes** (`WMO_HEADER_SIZE` en `nbtcp.h`), que es

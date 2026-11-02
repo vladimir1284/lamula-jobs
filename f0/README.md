@@ -117,7 +117,8 @@ Todo eso dice qué *debería* pasar. Lo que pasa lo dice F0.
 ## Lo que falta y necesita el contenedor
 
 Esta parte no se ha ejecutado: la sesión que preparó lo de arriba no tenía acceso al demonio de
-Docker. El orden es el de `docs/implementacion/fases.md`.
+Docker. **Los comandos literales, en orden, con sus puertas y dónde anotar cada resultado, están
+en [F0 en una máquina con Docker](../docs/implementacion/f0-ejecucion.md).** El resumen:
 
 1. **Levantar el ORPG.** `ghcr.io/vladimir1284/orpg:b24`, con `--hostname` fijo (el contenedor
    escribe `$(hostname)` en `.rssd.conf` en cada arranque).

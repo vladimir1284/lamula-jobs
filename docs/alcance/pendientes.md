@@ -55,8 +55,10 @@ Opciones identificadas, para cuando haya respuesta:
 - **Acotar si la imagen sale alguna vez de nuestra infraestructura.** Si el prospecto nunca hace
   `pull` y solo ve productos renderizados en nuestra web, el problema de distribución
   desaparece y queda solo el de uso.
-- **Pedir la postura por escrito a Michael Istok** (`michael.istok@noaa.gov`) sobre uso
-  comercial y redistribución.
+- **Pedir la postura por escrito**, por dos vías en paralelo —la NWS no puede responder por la
+  Universidad de Oklahoma, y esperar una respuesta para escribir la otra cuesta semanas—. Los
+  dos borradores están escritos y esperan revisión en `correspondencia/`:
+  `2026-11-02-istok-licencia.md` (NWS) y `2026-11-02-ou-licencia.md` (OU).
 - **Etiquetado de salida**: los productos del demo no pueden presentarse como oficiales del
   NWS, ni usar su nombre o identificadores. Esto toca la interfaz del viewer demo y es trabajo
   de F3 pase lo que pase con lo demás.

@@ -22,6 +22,10 @@ escribir el servicio, no después.
 El instrumental está en `f0/` y su `README.md` dice qué parte ya está respondida sin contenedor
 y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.py fetch`.
 
+**Si estás en una máquina con Docker, empieza por
+`docs/implementacion/f0-ejecucion.md`**: tiene los comandos literales en orden, las puertas de
+cada paso y dónde se anota cada resultado. F0 no necesita Postgres, ni R2, ni el Swarm.
+
 ## Reglas que no se negocian
 
 - **El runner no sabe de dónde vienen los ficheros.** Recibe claves en staging. Meter AWS (o
@@ -44,7 +48,8 @@ y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.
 - **No modifiques el build del ORPG por motivos de licencia.** El asunto está en consulta con
   los dueños del código desde el 2026-11-02. Excluir directorios del build es una de las
   opciones sobre la mesa, no una decisión tomada; proponerla está bien, ejecutarla por tu
-  cuenta no.
+  cuenta no. Los dos borradores de consulta están en `correspondencia/`, pendientes de que el
+  dueño del producto los revise y los envíe.
 
 ## Convenciones
 
