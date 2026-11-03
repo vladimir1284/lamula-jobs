@@ -18,6 +18,7 @@ la cabecera PEP 723.
 | `integridad.py` | Detecta productos truncados: longitud declarada en la cabecera Level III contra tamaño real |
 | `coordenadas.py` | Comprueba que cada producto trae el `siteID` y el `lat`/`lon` esperados (regla de verificación de coordenadas) |
 | `perfil.sh` / `perfil.py` | Muestrea el CPU por proceso del ORPG durante una reproducción y lo resume |
+| `rda_replay.py` / `rda_lr.sh` | Emulador de RDA que reproduce Level II por `cm_tcp` y escalera de velocidad de línea (`docs/referencia/rda-emulador.md`) |
 
 ### `catalogo.py`
 
