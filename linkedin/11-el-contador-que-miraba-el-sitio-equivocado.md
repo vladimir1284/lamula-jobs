@@ -11,7 +11,7 @@ Funcionó a medias, y lo interesante es cómo falló.
 
 A velocidad normal, bien. Al cuadruplicarla, salían cuatro productos de dieciséis. Al enviar sin freno, cero. Y yo tenía un contador de «datos perdidos» que decía **cero** en todos los casos.
 
-Me creí el contador una tarde entera. Pensé en un fallo de distribución, en un proceso que moría, en tiempos. Todo tenía sentido menos una cosa: si no se perdía nada, ¿por qué faltaban productos?
+Me creí el contador durante demasiado rato. Pensé en un fallo de distribución, en un proceso que moría, en tiempos. Todo tenía sentido menos una cosa: si no se perdía nada, ¿por qué faltaban productos?
 
 El contador miraba la primera etapa del sistema. La pérdida ocurría en la segunda: un proceso que corrige velocidades leía de un búfer de 1500 mensajes, unos cuatro giros de antena, y a ritmo rápido se quedaba atrás y le pisaban los datos antes de leerlos. Lo dejaba escrito en su propio registro, en otro fichero que yo no había abierto.
 
@@ -23,7 +23,7 @@ Tres lecciones:
 
 **Cuando faltan resultados, sigue el dato hasta cada etapa.** La pérdida estaba donde menos miraba.
 
-**El límite no estaba donde lo suponía.** Llevaba semanas dando por hecho que el sistema era lento por calcular. Era lento por esperar.
+**El límite no estaba donde lo suponía.** Llevaba días dando por hecho que el sistema era lento por calcular. Era lento por esperar.
 
 Queda trabajo por hacer: el primer volumen sigue sin coincidir del todo con el de la herramienta original, y no sé aún por qué. Lo cuento cuando lo sepa.
 
