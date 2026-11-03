@@ -64,7 +64,7 @@ Hechos, de los logs del ORPG:
 
 - **El techo está entre 4× y 8×, y 4× no es fiable.** De tres corridas a 4× con búferes de 5000 salieron
   14 y 13 productos (en la de 13 falta NST del volumen 2 y NMD difiere) y una con solo 4
-  productos y 2 `MESSAGE EXPIRED`. No sé qué la diferencia de esa tercera. La variación entre
+  productos y 2 `MESSAGE EXPIRED`. No sé qué distingue a esa tercera corrida de las otras. La variación entre
   corridas sin cambiar nada es en sí un hallazgo: no se puede fiar un job a este ritmo sin entender esa varianza.
 - DAA y DTA no salen a 4× (sí a 1×). Sin explicar.
 - Mejora medida con la corrida buena: ~175 s contra 745 s de `play_a2 -m` para 2 volúmenes.
