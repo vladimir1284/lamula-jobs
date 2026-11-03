@@ -43,6 +43,7 @@ el repo**: no hay notas, medidas ni acuerdos guardados fuera de aquí.
 | `l3proc` digiere los productos | **Pasa**: 106 de 106 en 12 volúmenes |
 | Equivalencia contra el feed oficial | **Parcial**: N0B, EET, DVL, NMD iguales; N0G y NVW con ≥4 volúmenes; DAA converge; DTA y los ids de NST no, con 13 min de historia |
 | Velocidad (D6) | **Decidida** (2026-11-02): `play_a2 -m -d`; los tres modos iguales en productos, ~80 min por 12 volúmenes |
+| Perfil del ORPG | **Medido**: el ORPG espera, no calcula; el ritmo lo marca el control de flujo de `play_a2` (`docs/referencia/perfil-orpg.md`) |
 | Recursos | **Parcial**: un volumen (125 % de CPU de pico, 790 MiB); falta con el pipeline live en el nodo |
 
 Hallazgos que cambian el diseño, todos en `docs/referencia/orpg-hechos.md`:

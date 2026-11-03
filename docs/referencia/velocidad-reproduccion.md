@@ -23,7 +23,7 @@ repite como `m2` con el enlace corregido.
   diferencia del 5 % entre el más lento
   y el más rápido. Es decir, **el reloj de `play_a2` no es el cuello de botella**: el ORPG tarda
   unos 6,5 min por volumen en procesar KAMX (VCP 212, 21 MB), pase lo que pase con el ritmo de
-  entrada. *Inferencia, no medida directa*: no se ha perfilado qué tarea del ORPG domina.
+  entrada. Perfilado después: el ORPG **espera, no calcula**, por el control de flujo de `play_a2 -m` (ver [Perfil del ORPG](perfil-orpg.md)).
 - **Decisión del dueño (2026-11-02), D6:** se usa el modo más rápido si no afecta a los
   resultados, es decir `-m`. No recorta el coste de un job de forma apreciable y no cambia los
   productos. El demo sigue costando ~6,5 min por volumen de KAMX, y las cuotas de D8 se calculan

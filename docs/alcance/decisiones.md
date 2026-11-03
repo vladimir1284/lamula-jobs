@@ -58,7 +58,7 @@ Límites que conviene no olvidar:
 - La ganancia es de ~5 % con **una sola corrida por modo**: está dentro de lo que podría ser
   ruido. La decisión se sostiene por «no empeora nada y no cuesta nada», no por el tiempo.
 - El motivo por el que no se aceleró más es que **el cuello de botella es el ORPG**, no el reloj
-  de `play_a2` (~6,5 min por volumen de KAMX; inferencia, no perfilado). El demo sigue
+  de `play_a2` (~6,5 min por volumen de KAMX; perfilado el 2026-11-02: el ORPG espera, no calcula; ver [Perfil del ORPG](../referencia/perfil-orpg.md)). El demo sigue
   costando ~80 min de nodo por 12 volúmenes, así que **sigue siendo asíncrono** y las cuotas de
   D8 se calculan con ese coste.
 - Si una repetición futura mostrara productos distintos entre modos, `-T` vuelve a ser el
