@@ -17,6 +17,7 @@ la cabecera PEP 723.
 | `wmo_probe.py` | Evidencia del fallo de `siteID` sin encabezado WMO |
 | `integridad.py` | Detecta productos truncados: longitud declarada en la cabecera Level III contra tamaño real |
 | `coordenadas.py` | Comprueba que cada producto trae el `siteID` y el `lat`/`lon` esperados (regla de verificación de coordenadas) |
+| `perfil.sh` / `perfil.py` | Muestrea el CPU por proceso del ORPG durante una reproducción y lo resume |
 
 ### `catalogo.py`
 
