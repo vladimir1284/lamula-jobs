@@ -117,15 +117,16 @@ los secretos del Swarm.
 ## 7. Reproducir
 
 ```
-play_a2 -T -p /data/ar2in/<job>/playlist
+play_a2 -m -d /data/ar2in/<job>
 ```
 
-Con playlist, porque los nombres de AWS no siguen la convención de prefijo y timestamp que
-espera el modo de línea de comandos. **Sin `-R`**: así el producto lleva el `vol_time`
-original (el huracán de 2017 aparece en 2017) y solo la hora de generación es la actual.
+Con `-d` (directorio), no con `-p`: la playlist fuerza el tipo NCDC y no lee el formato del
+bucket (F0, `pa_files.c:565`). **Sin `-R`**: así el producto lleva el `vol_time` original (el
+huracán de 2017 aparece en 2017) y solo la hora de generación es la actual.
 
-`-T` reproduce al ritmo real, unos 5 min por volumen. `-x` queda como perilla, no como
-requisito (D6).
+`-m` es el modo por defecto (D6, revisada el 2026-11-02): máxima velocidad con control de flujo
+del RPG, mismos productos que `-T` y el más rápido de los tres medidos. Aun así el ORPG tarda
+~6,5 min por volumen de KAMX, así que el job sigue durando decenas de minutos.
 
 Ruido esperado y benigno en la salida: `Bad data: Message type 0`.
 

@@ -38,27 +38,31 @@ Los jobs escriben en `lamula-demo-raster` y en la base `lamula_demo`. Motivo: el
 retención de 72 h del Worker `nexrad-l3-ops` borra por `created_at` y arrasaría con los jobs;
 además un fallo del plano demo no debe poder tocar el demo live que ya está vendiendo.
 
-## D6 — El demo es asíncrono (2026-11-01)
+## D6 — El demo es asíncrono; reproducción con `play_a2 -m` (2026-11-01, revisada 2026-11-02)
 
-El cliente lanza el job y recibe un enlace. Reproducción a tiempo real (`play_a2 -T`, sin
-`-x`), que es el único modo que la documentación de CODE respalda. Motivo: no hay razón para
-arriesgar pérdida de radiales por acelerar algo que el cliente no está mirando.
+El cliente lanza el job y recibe un enlace. Como el watcher publica según llegan los productos,
+el enlace funciona **mientras** el job corre y la línea de tiempo se va llenando.
 
-Matiz que conviene explotar: como el watcher publica según llegan los productos, el enlace
-funciona **mientras** el job corre y la línea de tiempo se va llenando.
+**Decisión original (2026-11-01):** `play_a2 -T`, el único modo que respalda la documentación de
+CODE, para no arriesgar pérdida de radiales.
 
-**Evidencia nueva del 2026-11-02, que no revierte la decisión pero la pone sobre la mesa.**
-Leído el fuente de `play_a2`: nada en el reproductor descarta radiales por ir rápido, `-T` no
-significa "a tiempo real" sino "simula también el hueco entre volúmenes", y existe `-m`, que
-reproduce a la máxima velocidad con control de flujo del propio RPG. Con los números de las
-ventanas propuestas, `-T` cuesta unos 85 minutos de nodo por job, mientras que saltarse los
-huecos costaría del orden de 60 y `-m` posiblemente mucho menos.
+**Revisión del 2026-11-02, decidida por el dueño del producto:** se usa el modo más rápido
+siempre que no afecte a los resultados. F0 lo midió (12 volúmenes de Irma, KAMX, enlace con
+`LR` alto): los tres modos dan los mismos productos (106 huellas, tolerancia 0,1 %, 0
+diferencias) y `-m` fue el más rápido, 4 662 s frente a 4 808 s (sin `-T`) y 4 903 s (`-T`).
+Por tanto **el modo por defecto del runner es `play_a2 -m -d <dir>`**. Ver
+[Velocidad de reproducción](../referencia/velocidad-reproduccion.md).
 
-No se cambia nada hasta que F0 mida las tres y `f0/equivalencia.py` diga si los productos son
-los mismos. Si lo son, el motivo de D6 —"no arriesgar pérdida de radiales por acelerar algo que
-el cliente no mira"— deja de aplicar tal cual está escrito, y el demo pasa de tardar una hora y
-media a tardar minutos. Eso cambia también las cuotas y hasta si el demo tiene que ser
-asíncrono.
+Límites que conviene no olvidar:
+
+- La ganancia es de ~5 % con **una sola corrida por modo**: está dentro de lo que podría ser
+  ruido. La decisión se sostiene por «no empeora nada y no cuesta nada», no por el tiempo.
+- El motivo por el que no se aceleró más es que **el cuello de botella es el ORPG**, no el reloj
+  de `play_a2` (~6,5 min por volumen de KAMX; inferencia, no perfilado). El demo sigue
+  costando ~80 min de nodo por 12 volúmenes, así que **sigue siendo asíncrono** y las cuotas de
+  D8 se calculan con ese coste.
+- Si una repetición futura mostrara productos distintos entre modos, `-T` vuelve a ser el
+  modo por defecto sin discutirlo.
 
 ## D7 — Mismo nodo del Swarm que producción (2026-11-01)
 

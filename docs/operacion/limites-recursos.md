@@ -34,7 +34,7 @@ demo live, que es lo que ya está enseñándose a clientes.
 ## Lo que ya está medido sin contenedor
 
 **Entrada.** Un job de doce volúmenes de huracán son **unos 240-300 MB de descarga** y entre 80
-y 88 minutos de reloj a `-T`. Detalle por caso en
+y 88 minutos de reloj a `-T` (medido en F0: ~78 min con `-m`, D6). Detalle por caso en
 [Catálogo verificado](../referencia/catalogo-verificado.md).
 
 **Salida y procesamiento.** Medido el 2026-11-02 pasando los diez productos reales de un

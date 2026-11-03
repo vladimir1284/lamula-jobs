@@ -14,7 +14,7 @@ Un contenedor a mano, sin servicios, sin cola, sin API. Un volumen real descarga
    [Hechos verificados del ORPG](../referencia/orpg-hechos.md).
 3. `play_a2 -d directorio` (no `-p`: no lee el formato del bucket) con uno o dos volúmenes, y después la comparación de los tres modos
    de velocidad (`-T`, sin `-T`, `-m`): duración de cada uno y, con `f0/equivalencia.py`, si
-   los productos salen iguales. De ahí sale si D6 sigue en pie.
+   los productos salen iguales. Resultado: iguales, y D6 quedó en `-m` (2026-11-02).
 4. Decodificar los productos resultantes con `l3proc process`.
 
 **Puertas:**
@@ -42,7 +42,7 @@ Nada de lo que sigue se escribe hasta que esto pase.
 
 ## F1 — Runner ejecutable
 
-Imagen `job-runner` (ORPG + pipeline) y un CLI que ejecuta un job completo desde una lista de
+Reproducción con `play_a2 -m -d` (D6). Imagen `job-runner` (ORPG + pipeline) y un CLI que ejecuta un job completo desde una lista de
 claves, sin cola ni API. Configuración de `nbtcp` y RPS list horneadas en la imagen, con `LR`
 alto (D11). El CLI filtra los ficheros que no son productos (`GSM…`, `P173_…`), pasa
 `integridad.py` antes de decodificar y le da a `l3proc watch` una copia, porque lo consume.

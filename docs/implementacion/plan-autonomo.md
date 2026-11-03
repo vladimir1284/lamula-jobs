@@ -48,8 +48,8 @@ del paso 7 y de la regla «las coordenadas se verifican».
 - Si el espacio libre baja de 5 GB (`df -h /`), se borran `f0-run/products-*` ya analizados,
   nunca los volúmenes de `ar2in12`.
 - Si un resultado contradice una decisión congelada, **se documenta y se para ahí**: ninguna
-  decisión se revierte en solitario. D6 en particular se re-decide con el dueño, aunque la
-  medida salga clara.
+  decisión se revierte en solitario. D6 se re-decidió con el dueño el 2026-11-02 (`-m`, ver
+  [Decisiones](../alcance/decisiones.md)).
 
 ## Lo que no se hace sin el dueño del producto
 

@@ -42,7 +42,7 @@ el repo**: no hay notas, medidas ni acuerdos guardados fuera de aquí.
 | Aislamiento KAMX → KHGX (D3) | **Pasa**, con límites (un cambio, una dirección) |
 | `l3proc` digiere los productos | **Pasa**: 106 de 106 en 12 volúmenes |
 | Equivalencia contra el feed oficial | **Parcial**: N0B, EET, DVL, NMD iguales; N0G y NVW con ≥4 volúmenes; DAA converge; DTA y los ids de NST no, con 13 min de historia |
-| Velocidad (D6) | **Medida**: los tres modos iguales en productos y ~80 min por 12 volúmenes |
+| Velocidad (D6) | **Decidida** (2026-11-02): `play_a2 -m -d`; los tres modos iguales en productos, ~80 min por 12 volúmenes |
 | Recursos | **Parcial**: un volumen (125 % de CPU de pico, 790 MiB); falta con el pipeline live en el nodo |
 
 Hallazgos que cambian el diseño, todos en `docs/referencia/orpg-hechos.md`:
@@ -53,9 +53,9 @@ causa era `LR=100000` (D11); `l3proc watch` consume su entrada; `mrpg startup` n
 **Lo que NO está hecho de F0:** la equivalencia no se midió con muchos volúmenes de historia, el
 retraso del `processor` con el pipeline live, y la repetición de cada modo (hay una sola corrida
 por modo). **No se ha escrito código del servicio.** Siguiente paso natural: F1, una vez el dueño
-decida D6 y revise lo de abajo.
+revise lo de abajo (D6 ya está decidida).
 
-Estado de las máquinas: el contenedor `orpg-f0` sigue arriba y `f0-run/` (no versionado, ~1 GB)
+Estado de las máquinas: el contenedor `orpg-f0` está **parado** (`docker start orpg-f0` lo reanuda, conserva la configuración editada y el volumen `f0-run`) y `f0-run/` (no versionado, ~1 GB)
 tiene volúmenes y productos. `docs/implementacion/plan-autonomo.md` dice qué se hizo sin supervisión.
 
 ### Esperando al dueño del producto
@@ -65,7 +65,6 @@ Nada de esto se ejecuta por iniciativa propia:
 | Qué | Dónde está |
 |---|---|
 | Dos borradores de consulta de licencia, sin enviar | `correspondencia/` — NWS y Universidad de Oklahoma. La dirección de OU está sin rellenar a propósito: se busca en ou.edu/otc, no se inventa |
-| D6 (velocidad de reproducción): ya medida, los tres modos iguales y ~80 min por 12 volúmenes; **decide el dueño** | `docs/referencia/velocidad-reproduccion.md` |
 | `-A` con el enrutado real del NWS, o parchear el pipeline con un `site_id` explícito | `docs/referencia/contrato-pipeline.md` |
 | Umbral de huecos, `max_bytes` por job, texto del formulario de acceso | `docs/alcance/pendientes.md` |
 | Los diez artículos de `linkedin/`, sin publicar: describen un demo comercial sobre el CODE | `linkedin/` — el 07 lleva nota explícita |

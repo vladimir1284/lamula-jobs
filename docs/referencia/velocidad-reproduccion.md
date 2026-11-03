@@ -24,9 +24,10 @@ repite como `m2` con el enlace corregido.
   y el más rápido. Es decir, **el reloj de `play_a2` no es el cuello de botella**: el ORPG tarda
   unos 6,5 min por volumen en procesar KAMX (VCP 212, 21 MB), pase lo que pase con el ritmo de
   entrada. *Inferencia, no medida directa*: no se ha perfilado qué tarea del ORPG domina.
-- Consecuencia para D6, **a decidir por el dueño** (esta medida no lo revierte): `-m` no
-  recorta el coste de un job, y como no cambia los productos tampoco los empeora. El demo sigue costando ~6,5 min por volumen de KAMX, y la lista de
-  cuotas de D8 se calcula con eso, no con la duración del volumen.
+- **Decisión del dueño (2026-11-02), D6:** se usa el modo más rápido si no afecta a los
+  resultados, es decir `-m`. No recorta el coste de un job de forma apreciable y no cambia los
+  productos. El demo sigue costando ~6,5 min por volumen de KAMX, y las cuotas de D8 se calculan
+  con eso, no con la duración del volumen.
 
 ## Qué falta para cerrar
 
