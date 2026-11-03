@@ -1,6 +1,6 @@
 # Emulador de RDA como alternativa a `play_a2` (2026-11-03)
 
-**Resultado: no hay ganancia demostrada. D6 no cambia.** Se probó si alimentar el ORPG como si fuera
+**Resultado inicial: sin ganancia a 1×. Actualización al final: con búferes mayores el 4× funciona a veces, sin ser fiable. D6 no cambia.** Se probó si alimentar el ORPG como si fuera
 un radar real (línea de banda ancha por `cm_tcp`) es más rápido que `play_a2 -m`.
 
 ## Qué se probó
@@ -43,9 +43,52 @@ de línea (`LR`) dada.
 - `nbtcp` hay que arrancarlo cuando la línea ya está conectada, y el ORPG hay que reiniciarlo
   para volver a conectar `nbtcp`.
 
+## Actualización (2026-11-03, tarde): la causa de los fallos a 4× y el techo
+
+Hechos, de los logs del ORPG:
+
+- A 4× o más, `veldeal` (desalias de velocidad) registra `Read Driving Input .... LB_EXPIRED` y
+  aborta el volumen: `rawdata.lb` tiene `maxn_msgs = 1500` (unos 4 cortes) y se le sobrescribe.
+  En una corrida `mrpg` también lo mató por `CPU Utilization 83 Too High` (límite 80), y a continuación
+  `p_server` falló. El contador `MESSAGE EXPIRED` que miraba (en `pbd`) no ve esta pérdida.
+- Subir `lb_n_msgs` de 1500 a 5000 en `cfg/product_attr_table` (configuración, no build) arregla el 4×:
+  14 productos, idénticos a los de la corrida a 1×. El contenedor quedó con 213 MB libres de 7,8 GB
+  (más 2 GB de caché) con esa configuración.
+
+| Con búferes de 5000 | Envío, 2 volúmenes | Productos |
+|---|---|---|
+| 4× (`LR=6144000`), tres corridas | 173–177 s | 14, 13 y 4 |
+| 8× | 84 s | 2 |
+| 16× | 43 s | 7 |
+| sin freno | 14 s | 0 |
+
+- **El techo está entre 4× y 8×, y 4× no es fiable.** De tres corridas a 4× con búferes de 5000 salieron
+  14 y 13 productos (en la de 13 falta NST del volumen 2 y NMD difiere) y una con solo 4
+  productos y 2 `MESSAGE EXPIRED`. No sé qué la diferencia de esa tercera. La variación entre
+  corridas sin cambiar nada es en sí un hallazgo: no se puede fiar un job a este ritmo sin entender esa varianza.
+- DAA y DTA no salen a 4× (sí a 1×). Sin explicar.
+- Mejora medida con la corrida buena: ~175 s contra 745 s de `play_a2 -m` para 2 volúmenes.
+
+### Volumen 1 distinto en Irma
+
+- Las corridas de `play_a2` (tres, 2 y 12 volúmenes) dan el mismo volumen 1: DVL `suma` 297 859,
+  EET 1 304 667, NVW 47 niveles. Las del emulador (1× y 4×) dan otro: 131 275, 1 567 976 y 44.
+  N0B es igual. Es determinista, no ruido. Del volumen 2 en adelante coinciden.
+- En el volumen de 2026-11-01 (KAMX, un volumen, arranque en frío) **`play_a2` y el emulador dan los 9
+  productos idénticos entre sí**, y ambos coinciden con el feed oficial en N0B, DVL, EET y NMD.
+  El defecto no es general.
+- No hay referencia oficial de Irma (el bucket Level III no devolvió nada para esas horas), así que
+  no sé cuál de las dos vías acierta en el volumen 1 de Irma.
+- Quité el reenvío de metadatos por volumen (`--sin-metadatos`) y la corrida salió mal (4 productos),
+  así que no sirve como evidencia.
+- Sospecha, sin probar: un efecto de arranque en frío específico de este volumen (VCP 212) en la
+  vía de banda ancha. Como las comparaciones reales necesitan historia de volúmenes de todos modos,
+  un volumen de calentamiento previo podría ser la solución, pero no está probado.
+
 ## Conclusión
 
-Sin control de flujo el ORPG no es fiable; con el ritmo de `LR=1536000` apenas se gana y los productos
-no coinciden con los de `play_a2 -m`. Cambiar el camino de ingesta cuesta una validación de
-equivalencia completa para un beneficio no demostrado. Queda sin responder qué falla a ≥4×.
-El contenedor se dejó con la configuración `player` original y parado.
+La causa de los fallos a 4× está identificada y tiene arreglo de configuración, pero el resultado
+**no es todavía fiable** (variación entre corridas, DAA/DTA ausentes, volumen 1 de Irma distinto).
+D6 no cambia. Para reabrirlo hacen falta: repetir el 4× unas 10 veces para medir la varianza,
+explicar DAA/DTA y decidir qué hacer con el volumen 1. Se restauró la configuración original del
+contenedor (copias `*.orig-rda` en `cfg/`), que quedó parado.

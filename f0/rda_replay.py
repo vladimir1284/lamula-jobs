@@ -57,8 +57,9 @@ def messages(path: Path):
 
 
 class Rda:
-    def __init__(self, volumes: list[Path], port: int, pause: float, delay: float = 2.0, linger: float = 5.0, password: str = "passwd") -> None:
+    def __init__(self, volumes: list[Path], port: int, pause: float, delay: float = 2.0, linger: float = 5.0, inline_meta_off: bool = False, password: str = "passwd") -> None:
         self.volumes, self.pause, self.delay, self.linger, self.password = volumes, pause, delay, linger, password
+        self.inline_meta_off = inline_meta_off
         self.sock = socket.socket()
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(("", port))
@@ -157,7 +158,7 @@ class Rda:
             t0, radials, size = time.time(), 0, 0
             for typ, msg in messages(vol):
                 if typ in METADATA or not self.alive:
-                    if typ in METADATA and typ != 2:
+                    if typ in METADATA and typ != 2 and not self.inline_meta_off:
                         self.send(DATA, 0, msg)
                     continue
                 try:
@@ -183,6 +184,7 @@ def main() -> int:
     ap.add_argument("--port", type=int, default=10010)
     ap.add_argument("--delay", type=float, default=2.0, help="segundos entre la orden de operar y el primer radial")
     ap.add_argument("--linger", type=float, default=5.0, help="segundos con la línea abierta tras el último radial")
+    ap.add_argument("--sin-metadatos", action="store_true", help="no reenviar los mensajes 3, 5, 13, 15 y 18 que trae cada volumen")
     ap.add_argument("--sleep", type=float, default=0.0, help="segundos entre radiales")
     ap.add_argument("--trace", action="store_true", help="anota lo que manda el ORPG (salvo keepalives)")
     args = ap.parse_args()
@@ -192,7 +194,7 @@ def main() -> int:
     if not vols:
         print("sin volúmenes")
         return 2
-    return Rda(vols, args.port, args.sleep, args.delay, args.linger).run()
+    return Rda(vols, args.port, args.sleep, args.delay, args.linger, args.sin_metadatos).run()
 
 
 if __name__ == "__main__":
