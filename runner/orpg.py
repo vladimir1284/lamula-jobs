@@ -49,6 +49,7 @@ def arrancar(log: Path, *, timeout: float = 300) -> None:
     `mrpg` no sale tras arrancar, así que se lanza aparte, sin terminal, y se espera la línea de
     fin de arranque en su salida. Con la máquina cargada el arranque llegó a tardar 2 min medidos.
     """
+    log.parent.mkdir(parents=True, exist_ok=True)
     log.unlink(missing_ok=True)
     with log.open("wb") as fh:
         subprocess.Popen(["mrpg", "-p", "-v", "startup"], stdout=fh, stderr=subprocess.STDOUT,

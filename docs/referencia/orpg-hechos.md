@@ -263,5 +263,26 @@ nuevo con `--hostname orpg-job` (tcp.conf lleva ese nombre), sin instalar nada a
 | `l3proc` | 106 procesados, 0 fallidos: 70 COGs y 36 JSON |
 | Contra la corrida de `orpg-f0` | `f0/equivalencia.py comparar`: 0 diferencias en los 106, tolerancia 0,1 % |
 
-Lo no comprobado sigue siendo: jobs seguidos en el mismo contenedor, otros sitios distintos de
-KAMX dentro de la imagen, y si `orpg-prod:b24` coincide con `orpg:b24` de GHCR.
+Lo no comprobado sigue siendo (los jobs seguidos se probaron el 2026-11-04, ver abajo): muchos
+jobs seguidos, y si `orpg-prod:b24` coincide con `orpg:b24` de GHCR.
+
+## Dos jobs seguidos en el mismo contenedor (2026-11-04)
+
+`f0/seguidos.sh` dentro de `job-f1`: KAMX (2 volúmenes, 2017-09-10) y a continuación KHGX
+(2 volúmenes, 2026-11-01), sin reiniciar el contenedor. Es el ensayo de D3.
+
+| | Job a (KAMX) | Job b (KHGX) |
+|---|---|---|
+| Código de salida | 0 | 0 |
+| Productos / truncados | 15 / 0 | 18 / 0 |
+| Coordenadas | 15 de 15 con AMX 25.611 −80.413 | 18 de 18 con HGX 29.472 −95.079 |
+| Duración | 970 s | 783 s |
+
+- El control negativo de `f0/coordenadas.py` (los productos de KHGX contra las coordenadas de
+  KAMX) da 0 de 18: la comprobación distingue un sitio del otro.
+- Tras cada `mrpg shutdown` + `pkill -x mrpg` el ORPG relanza `mrpg -b resume` solo (pid nuevo,
+  `life` de 1 s) y no estorbó al arranque siguiente. `nbtcp` y `play_a2` no quedaron vivos.
+- Un fallo del runner, corregido: no creaba el directorio de `--logs`. Fallaba antes de tocar
+  el ORPG, por eso los dos intentos fallidos no contaron.
+- Límites: dos jobs, una sola dirección (KAMX → KHGX), con la máquina compartida (las duraciones
+  no son una medida). No se probó muchas veces seguidas ni la dirección contraria.
