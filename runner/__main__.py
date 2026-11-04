@@ -54,7 +54,7 @@ def _orpg(args: argparse.Namespace) -> int:
 
 def _decodificar(args: argparse.Namespace) -> int:
     res = decodificar.decodificar(Path(args.productos), Path(args.cogs), trabajo=Path(args.trabajo), l3proc=shlex.split(args.l3proc))
-    print(f"{res.procesados} procesados, {res.fallidos} fallidos, {len(res.cogs)} salidas ({sum(p.suffix == ".tif" for p in res.cogs)} COGs)", flush=True)
+    print(f"{res.procesados} procesados, {res.fallidos} fallidos, {len(res.cogs)} salidas ({sum(p.suffix == '.tif' for p in res.cogs)} COGs)", flush=True)
     return 1 if res.fallidos or not res.cogs else 0
 
 

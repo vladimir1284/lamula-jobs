@@ -227,3 +227,23 @@ salida: 16 de 16 con `AMX`, 25.611, −80.413.
 | Tras `mrpg shutdown`, `rpg_ps` deja solo `mrpg` y `owr_server`, y la línea `Shutdown state` | Ese es el criterio de «ORPG parado»; `pgrep mrpg` no lo es |
 | El arranque tardó 2 min con la máquina cargada (`mrpg: system busy`, «CPU is high after maximum waiting period») en vez de ~10 s | Timeout de arranque de 300 s; con 120 s el primer intento falló |
 | `-I` ignora el directorio actual y `PYTHONPATH` | Para `python3 -I -m runner` el paquete tiene que estar instalado; en la prueba se usó `PYTHONPATH` sin `-I` |
+
+### La puerta de F1 con doce volúmenes (2026-11-03)
+
+`python3.11 -m runner orpg` y `runner decodificar` sobre los 12 volúmenes de KAMX/Irma (2017-09-10
+17:02 a 18:17 UTC), en `orpg-f0`:
+
+| Medida | Valor |
+|---|---|
+| Duración del job (arranque, reproducción, reposo, cierre) | 4 999 s (83 min) |
+| Productos | 106 de 106 enteros, 0 truncados, 22 ficheros que no son productos |
+| `f0/coordenadas.py` | 106 de 106 con `AMX`, 25.611, −80.413 |
+| `l3proc watch --once --no-publish` sobre una copia | 106 procesados, 0 fallidos: 70 COGs y 36 JSON |
+| Por producto | N0B, N0G, EET, DVL, NST, NMD, NVW ×12; DAA y DTA ×11 (DU3 no sale, como en F0) |
+| `vol_time` | del 17:02:48 al 18:17:40, el de los volúmenes, no el de hoy |
+| Georreferenciación | el centro de los COG N0B (primero y último) cae en −80.413, 25.611 |
+
+Mismos números que la pasada `-m` de F0. Tras el cierre queda un `mrpg -b resume` que el propio
+ORPG relanza al retirar `mrpg`; no impidió el job siguiente, pero no se ha probado con muchos
+seguidos. Lo no comprobado: la imagen (se corrió en `orpg-f0` con Python 3.11 instalado a mano) y que la espera de 90 s de reposo
+baste en otros sitios; aquí no se perdió ningún producto, porque salieron los mismos 106 de F0.
