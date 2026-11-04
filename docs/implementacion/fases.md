@@ -64,6 +64,13 @@ roles por job, `jobs-admin issue` para emitir tokens.
 **Puerta:** dos jobs seguidos, lanzados por API, sin interferencia entre ellos; un job
 cancelado a mitad no deja schema, rol ni objetos huérfanos.
 
+**Tanda de desgaste (movida desde F1, 2026-11-04):** de 10 a 15 jobs cortos (1 volumen) seguidos
+en el mismo contenedor, alternando sitios en las dos direcciones (KAMX ↔ KHGX), midiendo tras
+cada uno memoria de `mrpg`/`owr_server`, número de procesos y coordenadas de los productos. F1
+solo probó dos jobs en una dirección ([Hechos verificados](../referencia/orpg-hechos.md#dos-jobs-seguidos-en-el-mismo-contenedor-2026-11-04));
+lo que esta tanda busca es lo que se acumula con el reciclado (D3), que con dos jobs no se ve.
+Se corre con el runner ya detrás de la cola, no a mano.
+
 ## F3 — Viewer demo
 
 Segunda instancia del `lamula-webviewer`: resolución de credenciales por token de resultado,
