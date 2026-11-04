@@ -111,3 +111,12 @@ truncados con `LR=100000`—; lo segundo lo detecta si
 reaparece por cualquier otra causa. Una sola de las dos deja un fallo silencioso o un job que
 falla sin remedio. Sin ninguna, un COG con un hueco sin explicación.
 
+
+## D12 — La puerta de F1 se cierra con COGs en disco; R2 pasa a F2 (2026-11-03)
+
+F1 termina cuando doce volúmenes de un huracán salen como COGs en disco, con el `vol_time` y la
+georreferenciación correctos, decodificados por `l3proc` sobre una copia de la salida del ORPG
+y sin publicar. La publicación en R2 (y en la base que use el pipeline) se hace en F2.
+
+Motivo: decisión del dueño. No hay credenciales de R2 para probar y la publicación no cambia lo
+que F1 tiene que demostrar, que es la cadena ORPG → producto → COG.

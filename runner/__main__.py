@@ -8,13 +8,14 @@ enteros. La decodificación (paso 6) es otra orden; aquí no se toca Postgres ni
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import sys
 import time
 from datetime import timedelta
 from pathlib import Path
 
-from . import entradas, orpg, productos
+from . import decodificar, entradas, orpg, productos
 
 
 def _orpg(args: argparse.Namespace) -> int:
@@ -51,6 +52,12 @@ def _orpg(args: argparse.Namespace) -> int:
     return 1 if rev.truncados or not rev.buenos else 0
 
 
+def _decodificar(args: argparse.Namespace) -> int:
+    res = decodificar.decodificar(Path(args.productos), Path(args.cogs), trabajo=Path(args.trabajo), l3proc=shlex.split(args.l3proc))
+    print(f"{res.procesados} procesados, {res.fallidos} fallidos, {len(res.cogs)} salidas ({sum(p.suffix == ".tif" for p in res.cogs)} COGs)", flush=True)
+    return 1 if res.fallidos or not res.cogs else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="runner")
     sub = ap.add_subparsers(dest="orden", required=True)
@@ -65,10 +72,16 @@ def main(argv: list[str] | None = None) -> int:
     o.add_argument("--min-por-volumen", type=float, default=10.0, help="tope de play_a2 por volumen")
     o.add_argument("--reposo", type=float, default=90.0, help="s sin productos nuevos para dar el job por acabado")
     o.set_defaults(func=_orpg)
+    d = sub.add_parser("decodificar", help="productos a COGs en disco, sin publicar")
+    d.add_argument("--productos", required=True)
+    d.add_argument("--cogs", required=True)
+    d.add_argument("--trabajo", default=".", help="dónde dejar la copia temporal")
+    d.add_argument("--l3proc", default="l3proc", help="orden del pipeline, p. ej. 'uv run --project ../nexrad-l3-pipeline l3proc'")
+    d.set_defaults(func=_decodificar)
     args = ap.parse_args(argv)
     try:
         return args.func(args)
-    except (entradas.EntradaInvalida, orpg.OrpgError) as exc:
+    except (entradas.EntradaInvalida, orpg.OrpgError, decodificar.DecodificarError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
