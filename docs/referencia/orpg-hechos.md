@@ -286,3 +286,24 @@ jobs seguidos, y si `orpg-prod:b24` coincide con `orpg:b24` de GHCR.
   el ORPG, por eso los dos intentos fallidos no contaron.
 - Límites: dos jobs, una sola dirección (KAMX → KHGX), con la máquina compartida (las duraciones
   no son una medida). No se probó muchas veces seguidas ni la dirección contraria.
+
+## La imagen con el pipeline actual de `main` (2026-11-04)
+
+`job-runner:f1` se había construido con un checkout de `nexrad-l3-pipeline` 11 commits por detrás
+de `origin/main`. Con `main` (`175bf0c`) el ingest publica en R2 + Postgres (`StorageConfig`:
+`R2_*` y `PG_*`, commit `7d004df`); `D1Client` solo queda para `db/backfill_d1_to_pg.py`. El README
+del pipeline sigue describiendo D1 y está desactualizado. Esto cierra la contradicción que había
+quedado abierta: lo que decían el diseño y `AGENTS.md` era cierto.
+
+La imagen se reconstruyó con `main` (la anterior queda como `job-runner:f1-d1`) y se decodificaron
+los mismos 106 productos de la corrida de 12 volúmenes, sin repetir el ORPG (la mitad que cambió es
+la decodificación). `f0/comparar_salidas.py`, con el Python de la imagen:
+
+| | Resultado |
+|---|---|
+| `l3proc` | 106 procesados, 0 fallidos: 70 COGs y 36 JSON |
+| 70 COGs | idénticos: píxeles, geotransformación, CRS y tags |
+| 24 JSON (NMD, NVW) | idénticos |
+| 12 JSON de NST | distintos, **solo por adición**: 851 celdas, 0 cambios en lo que ya había; claves nuevas `dbz_max`, `dbz_max_height_kft`, `past`, `forecast` (commit `fa9a03c`, intencionado) |
+
+La puerta de F1 sigue pasando con el pipeline actual. No se probó la publicación (`--no-publish`).
