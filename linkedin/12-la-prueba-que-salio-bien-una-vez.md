@@ -26,3 +26,6 @@ Estado honesto: hay una vía más rápida que probablemente funciona, no la he v
 *Nota: este borrador habla de integrar software de procesamiento de radar de terceros. Revisar con el dueño del producto qué se puede contar públicamente antes de publicarlo; hay una consulta de licencia abierta (ver `correspondencia/`).*
 
 #Software #Testing #Rendimiento #Radar #NEXRAD
+
+---
+Actualización (2026-11-03): repetido 9 veces con la misma configuración, el 4× dio 2, 0, 2, 2, 0, 1, 2, 2 y 2 productos de unos 14 esperados. No reproduje la corrida buena. Se descarta la vía rápida y se mantiene `play_a2`.

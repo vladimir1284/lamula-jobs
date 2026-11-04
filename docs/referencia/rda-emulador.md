@@ -92,3 +92,20 @@ La causa de los fallos a 4× está identificada y tiene arreglo de configuració
 D6 no cambia. Para reabrirlo hacen falta: repetir el 4× unas 10 veces para medir la varianza,
 explicar DAA/DTA y decidir qué hacer con el volumen 1. Se restauró la configuración original del
 contenedor (copias `*.orig-rda` en `cfg/`), que quedó parado.
+
+## Cierre (2026-11-03): se descarta la velocidad por esta vía
+
+Se repitió el 4× (LR=24 576 000, `lb_n_msgs 5000` en los tres almacenes que comparten
+`rawdata.lb`: 54, 66 y 67, `cpu_limit` de `veldeal` en 100). Con 2 volúmenes se esperan unos 14
+productos. Salieron, en 9 repeticiones (la décima no se esperó): 2, 0, 2, 2, 0, 1, 2, 2, 2. Los
+envíos duraron lo normal (40 a 43 s) y `MESSAGE EXPIRED` siguió en 0. Las tres corridas
+anteriores habían dado 14, 13 y 4: no he podido reproducir aquella configuración, y no sé qué
+faltaba hoy (sin probar: otro búfer u otro límite de CPU).
+
+Decisión del dueño: **se olvida la velocidad**. Se queda la configuración más fiable medida, que
+es la de D6 (`play_a2 -m -d`, ORPG sin tocar). `f0/rda_replay.py` y `f0/rda_lr.sh` se conservan
+como instrumental de F0, no como camino del servicio. Configuración del contenedor restaurada
+desde las copias `*.orig-rda`; contenedor parado.
+
+Nota de método: subir `lb_n_msgs` de RAWDATA (54) sin subir REFL_RAWDATA (66) y COMB_RAWDATA (67)
+hace que `mrpg` se niegue a arrancar («Inconsistent maxn_msgs»).
