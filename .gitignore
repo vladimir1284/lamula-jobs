@@ -17,3 +17,4 @@ f0-run/
 
 # salidas locales de F0 (volúmenes, productos, COGs)
 f0-run/
+job-runner/build.log

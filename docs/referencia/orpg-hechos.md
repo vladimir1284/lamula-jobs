@@ -247,3 +247,21 @@ Mismos números que la pasada `-m` de F0. Tras el cierre queda un `mrpg -b resum
 ORPG relanza al retirar `mrpg`; no impidió el job siguiente, pero no se ha probado con muchos
 seguidos. Lo no comprobado: la imagen (se corrió en `orpg-f0` con Python 3.11 instalado a mano) y que la espera de 90 s de reposo
 baste en otros sitios; aquí no se perdió ningún producto, porque salieron los mismos 106 de F0.
+
+### La puerta de F1 dentro de la imagen `job-runner:f1` (2026-11-04)
+
+`job-runner/Dockerfile` parte de `orpg-prod:b24` y solo añade capas (Python 3.11, uv, el
+pipeline con Python 3.12, `runner/` y la configuración de `nbtcp` y la RPS list). Contenedor
+nuevo con `--hostname orpg-job` (tcp.conf lleva ese nombre), sin instalar nada a mano:
+`runner orpg` y `runner decodificar` sobre los mismos doce volúmenes de Irma.
+
+| Medida | Valor |
+|---|---|
+| Duración | 4 966 s (83 min) |
+| Productos | 106 de 106 enteros, 0 truncados |
+| Coordenadas | 106 de 106 con `AMX`, 25.611, −80.413 |
+| `l3proc` | 106 procesados, 0 fallidos: 70 COGs y 36 JSON |
+| Contra la corrida de `orpg-f0` | `f0/equivalencia.py comparar`: 0 diferencias en los 106, tolerancia 0,1 % |
+
+Lo no comprobado sigue siendo: jobs seguidos en el mismo contenedor, otros sitios distintos de
+KAMX dentro de la imagen, y si `orpg-prod:b24` coincide con `orpg:b24` de GHCR.

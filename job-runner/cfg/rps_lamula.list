@@ -1,0 +1,10 @@
+1    153   SDR   Super Resolution Reflectivity Data Array Product:   UNU      UNU      5        UNU      UNU      UNU      
+2    154   SDV   Super Resolution Velocity Data Array Product: 256   UNU      UNU      5        UNU      UNU      UNU      
+3    135   EET   Enhanced Echo Tops: 71 level/0.54 nm                UNU      UNU      UNU      UNU      UNU      UNU      
+4    134   DVL   High Resolution Digital VIL: 256 level/0.54 nm      UNU      UNU      UNU      UNU      UNU      UNU      
+5    170   DAA   Dual Pol Digital Accumulation Array 256 Data Level  UNU      UNU      UNU      UNU      UNU      UNU      
+6    173   DUA   Dual Pol Digital User Selectable Accumulation Prod  0        0        UNU      UNU      UNU      UNU      
+7    172   DSA   Dual Pol Digital Storm Total Accumulation 256 Data  UNU      UNU      UNU      UNU      UNU      UNU      
+8    58    STI   Storm Tracking Information                          UNU      UNU      UNU      UNU      UNU      UNU      
+9    141   MD    Mesocyclone Detection Product                       UNU      UNU      UNU      UNU      UNU      UNU      
+10   48    VWP   VAD Wind Profile                                    UNU      UNU      UNU      UNU      UNU      UNU      

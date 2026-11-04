@@ -50,11 +50,10 @@ alto (D11). El CLI filtra los ficheros que no son productos (`GSM…`, `P173_…
 **Puerta (D12, 2026-11-03):** doce volúmenes de un huracán entran y salen como COGs en disco,
 con el `vol_time` correcto y la georreferenciación correcta. Postgres y R2 pasan a F2.
 
-**Estado (2026-11-03):** la puerta se pasó en `orpg-f0`: doce volúmenes de Irma, 106 productos
-enteros, 70 COGs y 36 JSON, `vol_time` y coordenadas correctos, 83 min (ver
-[Hechos verificados](../referencia/orpg-hechos.md#la-puerta-de-f1-con-doce-volumenes-2026-11-03)).
-Falta la imagen `job-runner` (Python moderno, `runner/` instalado, pipeline, configuración de
-`nbtcp` y RPS list horneadas) y repetir la puerta dentro de ella.
+**Estado (2026-11-04): F1 cerrada.** La puerta se pasó en `orpg-f0` y se repitió dentro de la
+imagen `job-runner:f1` (`job-runner/Dockerfile`): doce volúmenes de Irma, 106 productos
+enteros, 70 COGs y 36 JSON, `vol_time` y coordenadas correctos, 83 min, idéntico a la corrida
+de `orpg-f0` ([Hechos verificados](../referencia/orpg-hechos.md#la-puerta-de-f1-dentro-de-la-imagen-job-runnerf1-2026-11-04)).
 
 ## F2 — Jobs como servicio
 
