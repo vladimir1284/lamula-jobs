@@ -212,3 +212,18 @@ fallidos, y los 21 se explican por dos causas.
 La RPS list personalizada se derivó del maestro tomando la primera línea de cada uno de los diez
 códigos (153 y 154 con su primer ángulo de elevación). `master_rps_list.dat` aparece en
 `$CFG_DIR` tras ejecutar `nbtcp` una vez.
+
+## Verificado en F1 (2026-11-03): el runner sobre el ORPG
+
+Primer job completo con `python3.11 -m runner orpg` (`runner/`), dos volúmenes de KAMX/Irma,
+dentro de `orpg-f0`: **16 productos, 0 truncados, 6 ficheros que no son productos, 1 139 s**
+(19 min: arranque, ~13 min de reproducción y 90 s de reposo). `f0/coordenadas.py` sobre la
+salida: 16 de 16 con `AMX`, 25.611, −80.413.
+
+| Hecho | Consecuencia |
+|---|---|
+| La imagen `orpg-prod:b24` solo trae **Python 3.6.8** | La imagen del runner tiene que instalar un Python moderno (aquí se probó con `python3.11` de `dnf`, solo en el contenedor de pruebas) |
+| `mrpg -p -v startup` **se desdobla**: el proceso que se lanza no es el que queda vivo | Matar el `Popen` no sirve; se retira con `pkill -x mrpg` tras comprobar que `rpg_ps` ya no lista tareas |
+| Tras `mrpg shutdown`, `rpg_ps` deja solo `mrpg` y `owr_server`, y la línea `Shutdown state` | Ese es el criterio de «ORPG parado»; `pgrep mrpg` no lo es |
+| El arranque tardó 2 min con la máquina cargada (`mrpg: system busy`, «CPU is high after maximum waiting period») en vez de ~10 s | Timeout de arranque de 300 s; con 120 s el primer intento falló |
+| `-I` ignora el directorio actual y `PYTHONPATH` | Para `python3 -I -m runner` el paquete tiene que estar instalado; en la prueba se usó `PYTHONPATH` sin `-I` |

@@ -50,6 +50,13 @@ alto (D11). El CLI filtra los ficheros que no son productos (`GSM…`, `P173_…
 **Puerta:** doce volúmenes de un huracán entran y salen como productos en un schema de
 Postgres y COGs en R2, con el `vol_time` correcto y la georreferenciación correcta.
 
+**Estado (2026-11-03):** hecha la mitad ORPG del CLI (`runner/`: validar entradas, adaptar sitio,
+arrancar, `nbtcp`, `play_a2 -m -d`, reposo, cierre, filtro e integridad), probada con dos
+volúmenes (16 productos, coordenadas verificadas; ver
+[Hechos verificados](../referencia/orpg-hechos.md#verificado-en-f1-2026-11-03-el-runner-sobre-el-orpg)).
+Falta: la decodificación con una copia a `l3proc` y la publicación en Postgres y R2, la
+imagen `job-runner` con Python moderno, y la corrida de doce volúmenes.
+
 ## F2 — Jobs como servicio
 
 Schema de control (tokens, niveles, jobs, entradas), cola con `FOR UPDATE SKIP LOCKED`,
