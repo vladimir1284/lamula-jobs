@@ -1,0 +1,131 @@
+"""jobs-api: la única cara pública. Valida token, aplica cuotas, crea jobs y sirve su estado.
+
+No procesa nada y no habla con el ORPG. Una conexión por petición: el volumen del demo (una
+decena de prospectos) no justifica un pool, y así un fallo de Postgres no deja conexiones colgando.
+"""
+
+from __future__ import annotations
+
+import hmac
+import os
+from contextlib import contextmanager
+from pathlib import Path
+
+import psycopg
+from fastapi import Depends, FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
+
+from . import queue, service, tenancy
+from .config import Secrets, env
+from .db import conectar
+from .ids import token_resultado
+
+
+class EntradaIn(BaseModel):
+    staging_key: str = Field(min_length=1, max_length=512)
+    bytes: int = Field(default=0, ge=0)
+    source_key: str | None = None
+
+
+class JobIn(BaseModel):
+    icao: str
+    inputs: list[EntradaIn]
+
+
+def _publico(j: dict, secrets: Secrets) -> dict:
+    return {
+        "id": j["id"], "state": j["state"], "icao": j["icao"], "n_volumes": j["n_volumes"],
+        "vol_from": j["vol_from"], "vol_to": j["vol_to"], "created_at": j["created_at"],
+        "started_at": j["started_at"], "finished_at": j["finished_at"], "expires_at": j["expires_at"],
+        "error": j["error"], "cancel_requested": j["cancel_requested"],
+        "result_token": token_resultado(secrets.result, j["id"]),
+    }
+
+
+def create_app(dsn: str | None = None, secrets: Secrets | None = None, migraciones: Path | None = None,
+               internal_key: str | None = None) -> FastAPI:
+    dsn = dsn or env("JOBS_API_DSN")
+    secrets = secrets or Secrets.from_env()
+    migraciones = migraciones or Path(env("PIPELINE_MIGRATIONS"))
+    internal_key = internal_key or os.environ.get("JOBS_INTERNAL_KEY", "")
+    app = FastAPI(title="LAMULA jobs-api", docs_url=None, redoc_url=None)
+
+    @contextmanager
+    def _conn():
+        c = conectar(dsn)
+        try:
+            yield c
+        finally:
+            c.close()
+
+    def token(authorization: str | None = Header(default=None)) -> dict:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(401, "falta el token de acceso")
+        with _conn() as c:
+            t = queue.validar_token(c, authorization[7:])
+        if t is None:
+            raise HTTPException(401, "token no válido, caducado o revocado")
+        return t
+
+    @app.get("/healthz")
+    def healthz() -> dict:
+        with _conn() as c:
+            c.execute("SELECT 1")
+        return {"ok": True}
+
+    @app.post("/v1/jobs", status_code=201)
+    def alta(body: JobIn, tok: dict = Depends(token)) -> dict:
+        ents = [queue.Entrada(e.staging_key, e.bytes, e.source_key) for e in body.inputs]
+        with _conn() as c:
+            try:
+                j = service.crear_job(c, tok, icao=body.icao.upper(), entradas=ents, secrets=secrets, migraciones=migraciones)
+            except queue.EntradaInvalida as exc:
+                raise HTTPException(422, str(exc))
+            except queue.CuotaExcedida as exc:
+                raise HTTPException(429, str(exc))
+            except queue.Solapado as exc:
+                raise HTTPException(409, str(exc))
+        return _publico(j, secrets)
+
+    def _propio(c: psycopg.Connection, job_id: str, tok: dict) -> dict:
+        try:
+            j = queue.obtener(c, job_id)
+        except KeyError:
+            raise HTTPException(404, "no existe")
+        if j["token_id"] != tok["id"]:
+            raise HTTPException(404, "no existe")  # no se distingue «ajeno» de «inexistente»
+        return j
+
+    @app.get("/v1/jobs")
+    def lista(tok: dict = Depends(token)) -> list[dict]:
+        with _conn() as c:
+            rows = c.execute("SELECT * FROM control.jobs WHERE token_id = %s ORDER BY created_at DESC LIMIT 100", (tok["id"],)).fetchall()
+        return [_publico(j, secrets) for j in rows]
+
+    @app.get("/v1/jobs/{job_id}")
+    def estado(job_id: str, tok: dict = Depends(token)) -> dict:
+        with _conn() as c:
+            return _publico(_propio(c, job_id, tok), secrets)
+
+    @app.post("/v1/jobs/{job_id}/cancel")
+    def cancela(job_id: str, tok: dict = Depends(token)) -> dict:
+        with _conn() as c:
+            _propio(c, job_id, tok)
+            return {"state": queue.cancelar(c, job_id)}
+
+    @app.get("/v1/results/{rtoken}")
+    def resultado(rtoken: str, x_internal_key: str | None = Header(default=None)) -> dict:
+        """Para el viewer demo (servidor a servidor): del token de resultado a las credenciales de solo lectura."""
+        if not internal_key or not x_internal_key or not hmac.compare_digest(x_internal_key, internal_key):
+            raise HTTPException(401, "solo servidor a servidor")
+        from .ids import sha256
+        with _conn() as c:
+            j = c.execute("SELECT * FROM control.jobs WHERE result_token_sha256 = %s", (sha256(rtoken),)).fetchone()
+            if j is None or j["resources_dropped_at"] is not None or j["state"] in ("creating", "expired", "cancelled"):
+                raise HTTPException(404, "no existe o caducó")
+        return {
+            "job_id": j["id"], "state": j["state"], "vol_from": j["vol_from"], "vol_to": j["vol_to"], "expires_at": j["expires_at"],
+            "pg_user": tenancy.rol_ro(j["id"]), "pg_password": tenancy.password(secrets.ro, "ro", j["id"]),
+        }
+
+    return app

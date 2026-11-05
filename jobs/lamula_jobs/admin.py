@@ -1,0 +1,71 @@
+"""`jobs-admin`: emisión de tokens, migración, barrido y comprobación de huérfanos.
+
+El token de acceso se muestra una sola vez; en la base queda su sha256 (docs/operacion/acceso-y-cuotas.md).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+from . import sweep
+from .config import Secrets, env
+from .db import conectar, migrar
+from .ids import nuevo_token_acceso, sha256, ulid
+
+
+def emitir(conn, *, email: str, tier: str, org: str | None = None, note: str | None = None, days: int | None = None) -> tuple[str, str]:
+    if conn.execute("SELECT 1 FROM control.tiers WHERE name = %s", (tier,)).fetchone() is None:
+        raise SystemExit(f"nivel desconocido: {tier}")
+    tok, tid = nuevo_token_acceso(), ulid()
+    caduca = datetime.now(timezone.utc) + timedelta(days=days) if days else None
+    conn.execute("INSERT INTO control.access_tokens (id, email, org, token_sha256, tier, expires_at, note) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                 (tid, email, org, sha256(tok), tier, caduca, note))
+    return tid, tok
+
+
+def almacen_desde_entorno() -> sweep.Almacen:
+    import boto3
+    s3 = boto3.client("s3", endpoint_url=env("R2_ENDPOINT"), aws_access_key_id=env("R2_ACCESS_KEY_ID"),
+                      aws_secret_access_key=env("R2_SECRET_ACCESS_KEY"), region_name="auto")
+    return sweep.Almacen(s3, env("R2_BUCKET"), env("STAGING_BUCKET"))
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="jobs-admin")
+    sub = ap.add_subparsers(dest="orden", required=True)
+    sub.add_parser("migrate", help="aplica las migraciones de control (con el DSN de administración)")
+    i = sub.add_parser("issue", help="emite un token de acceso")
+    i.add_argument("--email", required=True)
+    i.add_argument("--tier", required=True)
+    i.add_argument("--org")
+    i.add_argument("--note")
+    i.add_argument("--days", type=int, help="caducidad; sin ella no caduca")
+    r = sub.add_parser("revoke", help="revoca un token (por id)")
+    r.add_argument("token_id")
+    sub.add_parser("sweep", help="runners muertos, caducidad y borrado de lo cancelado o caducado")
+    sub.add_parser("orphans", help="schemas y roles job_* sin job vigente; sale con 1 si hay alguno")
+    args = ap.parse_args(argv)
+    conn = conectar(env("JOBS_ADMIN_DSN"))
+    if args.orden == "migrate":
+        print(json.dumps(migrar(conn)))
+    elif args.orden == "issue":
+        tid, tok = emitir(conn, email=args.email, tier=args.tier, org=args.org, note=args.note, days=args.days)
+        print(f"id: {tid}\ntoken (no se vuelve a mostrar): {tok}")
+    elif args.orden == "revoke":
+        conn.execute("UPDATE control.access_tokens SET revoked_at = now() WHERE id = %s AND revoked_at IS NULL", (args.token_id,))
+    elif args.orden == "sweep":
+        s = Secrets.from_env()
+        print(json.dumps(sweep.barrer(conn, almacen_desde_entorno(), migraciones=Path(env("PIPELINE_MIGRATIONS")), rw=s.rw, ro=s.ro), default=str))
+    elif args.orden == "orphans":
+        h = sweep.huerfanos(conn)
+        print(json.dumps(h))
+        return 1 if h["schemas"] or h["roles"] else 0
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

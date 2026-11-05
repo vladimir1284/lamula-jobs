@@ -1,0 +1,27 @@
+[project]
+name = "lamula-jobs"
+version = "0.1.0"
+description = "jobs-api, cola, tenencia por job y bucle del runner del demo LAMULA (F2)"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.2",
+    "boto3>=1.34",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+jobs-admin = "lamula_jobs.admin:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27", "moto[s3,server]>=5"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lamula_jobs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
