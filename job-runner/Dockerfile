@@ -3,8 +3,8 @@
 # (docs/referencia/licencia.md).
 #
 #   docker build -f job-runner/Dockerfile \
-#     --build-context pipeline=../nexrad-l3-pipeline -t job-runner:f1 .
-#   docker run -d --name job --hostname orpg-job --stop-timeout 30 -v "$PWD/f0-run:/data" job-runner:f1
+#     --build-context pipeline=../nexrad-l3-pipeline -t job-runner:f2 .
+#   docker run -d --name job --hostname orpg-job --stop-timeout 30 -v "$PWD/f0-run:/data" job-runner:f2
 #
 # `--hostname orpg-job` es obligatorio: tcp.conf (enlace 1 de nbtcp) lleva ese nombre y el
 # runner usa el hostname del contenedor como último argumento de nbtcp.
@@ -27,7 +27,10 @@ RUN cd /opt/pipeline && uv sync --frozen --no-dev \
  && chmod -R a+rX /opt/pipeline /opt/python
 
 COPY runner /usr/lib/python3.11/site-packages/runner
-RUN chmod -R a+rX /usr/lib/python3.11/site-packages/runner
+# Bucle del runner (F2): corre con el Python del pipeline, que ya trae psycopg y boto3.
+COPY jobs/lamula_jobs /opt/jobs/lamula_jobs
+RUN printf '#!/bin/sh\nPYTHONPATH=/opt/jobs exec /opt/pipeline/.venv/bin/python -m lamula_jobs.worker "$@"\n' > /usr/local/bin/jobs-worker \
+ && chmod 755 /usr/local/bin/jobs-worker && chmod -R a+rX /usr/lib/python3.11/site-packages/runner /opt/jobs
 
 # Configuración de nbtcp y RPS list (F0): enlace 1 cm_tcp, tcp.conf con orpg-job, LR 1536000 (D11)
 COPY --chown=orpg:orpg job-runner/cfg/comms_link.conf job-runner/cfg/tcp.conf job-runner/cfg/rps_lamula.list /home/orpg/cfg/

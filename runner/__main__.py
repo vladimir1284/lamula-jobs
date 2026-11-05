@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import shlex
 import shutil
+import signal
 import sys
 import time
 from datetime import timedelta
@@ -58,7 +59,18 @@ def _decodificar(args: argparse.Namespace) -> int:
     return 1 if res.fallidos or not res.cogs else 0
 
 
+def _sigterm(signum, frame) -> None:
+    """Cancelación desde el worker: el SIGTERM se vuelve una excepción para que `_orpg` cierre el ORPG.
+
+    Solo la primera vez; una segunda señal durante el cierre no lo interrumpe (el worker acaba con
+    SIGKILL pasada la gracia, y limpia por nombre los procesos que queden).
+    """
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    raise SystemExit(143)
+
+
 def main(argv: list[str] | None = None) -> int:
+    signal.signal(signal.SIGTERM, _sigterm)
     ap = argparse.ArgumentParser(prog="runner")
     sub = ap.add_subparsers(dest="orden", required=True)
     o = sub.add_parser("orpg", help="mitad ORPG de un job")
