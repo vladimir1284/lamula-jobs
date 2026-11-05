@@ -165,3 +165,22 @@ La fila del job se inserta en `creating`; solo cuando el schema y los roles exis
 Un alta que muere entre las dos cosas queda en `creating` y el barrido la marca `failed` pasados 10
 minutos. Motivo: sin ese estado, un runner podía reclamar el job milisegundos antes de que existiera
 su schema. Las cuotas cuentan `creating` como activo.
+
+## D16 — Un runner sin latido durante 120 s se da por muerto (2026-11-05)
+
+El barrido devuelve a la cola, o marca `failed`, al job reclamado cuyo último latido tiene más de
+**120 s** (antes 600). `jobs-admin health` avisa a los **60 s**, para llegar antes que el barrido.
+
+Motivo, medido: con un job real de 12 volúmenes (84 min, ORPG a pleno) el mayor hueco entre
+latidos fue **13,2 s** y no hubo ninguno de más de 30 s
+([Resultados de F2](../referencia/f2-resultados.md#margen-del-timeout-de-runner-muerto-2026-11-05)).
+120 s deja nueve veces ese margen y recorta lo que tarda en liberarse un job de un worker muerto: el
+ORPG huérfano sigue reproduciendo hasta que alguien reclama el job, y con 600 s eran hasta ~10 min de
+nodo pagado de la cuota del cliente.
+
+**Se revisa si** el pipeline live pasa a compartir nodo con el runner: la medida es de un job solo, y
+con contención el hueco puede crecer. Es una constante (`sweep.TIMEOUT_MUERTO_S`), no un contrato.
+
+`jobs-admin expire <job>` (misma fecha) caduca a mano un job `ready` o `failed` y borra ya su schema,
+roles y objetos. Sin él, un job `ready` bloquea su radar y sus horas (D14) hasta que caduca, meses
+después, y no había otra forma de liberarlo. En cola o en marcha no actúa: se cancela primero.

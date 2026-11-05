@@ -71,17 +71,18 @@ docker exec -d job-f2 bash -lc 'jobs-supervisor --metricas /data/wear-f2.jsonl >
 sale, lo relanza con pausa creciente (2 s, 4 s … máx. 60 s; vuelve a 2 s si el worker aguantó ≥60 s) y
 reenvía SIGTERM, tanto en la pausa como con un job en curso. Probado con un worker falso que muere cada
 segundo, y **con el ORPG real** (2026-11-05, `jobs/e2e/muerte_worker.py`): `kill -9` al worker con
-`play_a2` reproduciendo → worker nuevo a los 2 s → el barrido (timeout 40 s en la prueba; 600 s en
+`play_a2` reproduciendo → worker nuevo a los 2 s → el barrido (timeout 40 s en la prueba; 120 s en
 producción) devuelve el job a la cola → el worker nuevo lo termina `ready` en el intento 2, sin procesos
 del ORPG, schemas ni roles huérfanos. Un job que se queda a medias lo recoge el barrido, no el
 supervisor. Observado: el ORPG del worker muerto sigue reproduciendo hasta que el worker nuevo reclama
-el job y llama a `limpiar_orpg` (con el timeout de producción, hasta ~10 min con el ORPG ocupado).
+el job y llama a `limpiar_orpg` (con el timeout de producción, hasta ~2 min con el ORPG ocupado).
 
 **Alarma de cola y barrido.** Se programan fuera del contenedor del runner:
 
 ```bash
-jobs-admin health            # sale con 1 si hay jobs en cola >300 s o en marcha sin latido >300 s
+jobs-admin health            # sale con 1 si hay jobs en cola >300 s o en marcha sin latido >60 s
 jobs-admin sweep --cada 60   # el barrido en bucle, como servicio; sin --cada, una vez
+jobs-admin expire <job_id>   # caduca a mano un job ready o failed y libera su radar y sus horas (D14)
 ```
 
 `health` está pensada para un chequeo periódico (cron, o el healthcheck de un servicio) que avise al

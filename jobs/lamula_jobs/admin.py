@@ -1,4 +1,4 @@
-"""`jobs-admin`: emisión de tokens, migración, barrido y comprobación de huérfanos.
+"""`jobs-admin`: emisión de tokens, migración, barrido, caducidad a mano y comprobación de huérfanos.
 
 El token de acceso se muestra una sola vez; en la base queda su sha256 (docs/operacion/acceso-y-cuotas.md).
 """
@@ -51,7 +51,9 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--cada", type=int, metavar="SEGUNDOS", help="en bucle, cada tantos segundos (para un servicio); sin él, una vez")
     h = sub.add_parser("health", help="alarma de cola: jobs sin reclamar o con latido viejo; sale con 1 si hay alguno")
     h.add_argument("--cola-max", type=int, default=300, help="segundos que un job puede esperar en cola (300)")
-    h.add_argument("--latido-max", type=int, default=300, help="segundos sin latido de un job en marcha (300)")
+    h.add_argument("--latido-max", type=int, default=sweep.LATIDO_AVISO_S, help=f"segundos sin latido de un job en marcha ({sweep.LATIDO_AVISO_S})")
+    x = sub.add_parser("expire", help="caduca a mano un job ready o failed y borra ya su schema, roles y objetos")
+    x.add_argument("job_id")
     sub.add_parser("orphans", help="schemas y roles job_* sin job vigente; sale con 1 si hay alguno")
     args = ap.parse_args(argv)
     conn = conectar(env("JOBS_ADMIN_DSN"))
@@ -79,6 +81,16 @@ def main(argv: list[str] | None = None) -> int:
         h = sweep.salud(conn, cola_max_s=args.cola_max, latido_max_s=args.latido_max)
         print(json.dumps(h, default=str))
         return 1 if h["sin_reclamar"] or h["latido_viejo"] else 0
+    elif args.orden == "expire":
+        try:
+            r = sweep.caducar(conn, almacen_desde_entorno(), args.job_id)
+        except KeyError:
+            print(f"no existe el job {args.job_id}", file=sys.stderr)
+            return 1
+        print(json.dumps(r, default=str))
+        if not r["caducado"]:
+            print(f"el job está {r['state']}: solo se caducan los ready o failed (uno en marcha se cancela antes)", file=sys.stderr)
+            return 1
     elif args.orden == "orphans":
         h = sweep.huerfanos(conn)
         print(json.dumps(h))

@@ -23,7 +23,7 @@ import lib
 
 TOK = open(sys.argv[1]).read().strip()
 VOLUMEN = "/home/vladimir/Documents/Trabajo/Nitza/lamula-jobs/f0-run/ar2in12/KAMX20170910_170248_V06"
-TIMEOUT_MUERTO = 40  # s sin latido; en producción son 600
+TIMEOUT_MUERTO = 40  # s sin latido; en producción son 120 (D16)
 
 
 def paso(msg: str) -> None:

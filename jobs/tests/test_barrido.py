@@ -85,3 +85,51 @@ def test_salud_avisa_de_cola_sin_worker_y_de_latido_viejo(api_conn, admin, token
     admin.execute("UPDATE control.jobs SET state='cancelled' WHERE id=%s", (j["id"],))
     s = sweep.salud(admin)
     assert not mio(s["latido_viejo"]) and not mio(s["sin_reclamar"])           # terminado: no cuenta
+
+
+def test_expire_libera_el_radar_y_no_toca_lo_que_corre(api_conn, admin, token, almacen):
+    import pytest
+    tok = queue.validar_token(admin, token["token"])
+    dia = dia_unico()
+    mk = lambda: service.crear_job(api_conn, tok, icao="KAMX", secrets=SECRETS, migraciones=MIGRACIONES,
+                                   entradas=[queue.Entrada(k, 5) for k in claves("KAMX", dia, 1)])
+    base = sweep.huerfanos(admin)
+    j = mk()
+    for e in queue.entradas_de(admin, j["id"]):
+        almacen.s3.put_object(Bucket="staging", Key=e["staging_key"], Body=b"vol")
+    # en cola: no se caduca, y no se borra nada
+    assert sweep.caducar(api_conn, almacen, j["id"]) == {"state": "queued", "caducado": False}
+    assert queue.obtener(admin, j["id"])["state"] == "queued"
+    # ready: caduca, borra todo y deja libre el radar y las horas (D14)
+    admin.execute("UPDATE control.jobs SET state='ready' WHERE id=%s", (j["id"],))
+    r = sweep.caducar(api_conn, almacen, j["id"])
+    assert r["caducado"] and r["state"] == "expired"
+    assert queue.obtener(admin, j["id"])["state"] == "expired"
+    assert admin.execute("SELECT 1 FROM pg_namespace WHERE nspname=%s", (tenancy.schema_de(j["id"]),)).fetchone() is None
+    assert not {o["Key"] for o in almacen.s3.list_objects_v2(Bucket="staging").get("Contents", [])} & {e["staging_key"] for e in queue.entradas_de(admin, j["id"])}
+    assert sweep.huerfanos(admin) == base
+    otro = mk()                                                                # antes habría dado Solapado
+    # repetir no rompe nada
+    assert sweep.caducar(api_conn, almacen, j["id"]) == {"state": "expired", "caducado": False}
+    with pytest.raises(KeyError):
+        sweep.caducar(api_conn, almacen, "no-existe")
+    queue.cancelar(api_conn, otro["id"])
+    sweep.barrer(api_conn, almacen, migraciones=MIGRACIONES, rw=SECRETS.rw, ro=SECRETS.ro)
+    assert sweep.huerfanos(admin) == base
+
+
+def test_barrido_reclama_a_los_120_s_y_no_antes(api_conn, admin, token, almacen):
+    tok = queue.validar_token(admin, token["token"])
+    j = service.crear_job(api_conn, tok, icao="KAMX", secrets=SECRETS, migraciones=MIGRACIONES,
+                          entradas=[queue.Entrada(k) for k in claves("KAMX", dia_unico(), 1)])
+    assert sweep.TIMEOUT_MUERTO_S == 120 and sweep.LATIDO_AVISO_S < sweep.TIMEOUT_MUERTO_S
+    ve = lambda: queue.obtener(admin, j["id"])["state"]
+    admin.execute("UPDATE control.jobs SET state='ingesting', claimed_by='r', attempts=1, heartbeat_at = now() - interval '100 s' WHERE id=%s", (j["id"],))
+    sweep.barrer(api_conn, almacen, migraciones=MIGRACIONES, rw=SECRETS.rw, ro=SECRETS.ro)
+    assert ve() == "ingesting"                                                 # 100 s: aún dentro del timeout
+    assert [x for x in sweep.salud(admin)["latido_viejo"] if x["id"] == j["id"]]  # pero `health` ya avisa
+    admin.execute("UPDATE control.jobs SET heartbeat_at = now() - interval '130 s' WHERE id=%s", (j["id"],))
+    r = sweep.barrer(api_conn, almacen, migraciones=MIGRACIONES, rw=SECRETS.rw, ro=SECRETS.ro)
+    assert j["id"] in r["requeued"] and ve() == "queued"
+    queue.cancelar(api_conn, j["id"])
+    sweep.barrer(api_conn, almacen, migraciones=MIGRACIONES, rw=SECRETS.rw, ro=SECRETS.ro)

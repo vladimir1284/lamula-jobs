@@ -56,7 +56,14 @@ def resetear(conn: psycopg.Connection, almacen: Almacen, job_id: str, *, migraci
     tenancy.crear(conn, job_id, migraciones=migraciones, rw_secret=rw, ro_secret=ro)
 
 
-def barrer(conn: psycopg.Connection, almacen: Almacen, *, migraciones: Path, rw: bytes, ro: bytes, timeout_s: int = 600) -> dict:
+# Un runner sin latido durante TIMEOUT_MUERTO_S está muerto. El worker late cada 10 s; con un job real de 84 min el
+# mayor hueco medido fue 13,2 s (docs/referencia/f2-resultados.md), así que 120 s deja 9 veces de margen (D16).
+TIMEOUT_MUERTO_S = 120
+# `salud` avisa antes de que el barrido reclame: a mitad del timeout, 4,5 veces el mayor hueco medido.
+LATIDO_AVISO_S = 60
+
+
+def barrer(conn: psycopg.Connection, almacen: Almacen, *, migraciones: Path, rw: bytes, ro: bytes, timeout_s: int = TIMEOUT_MUERTO_S) -> dict:
     res = {"requeued": [], "failed": [], "dropped": []}
     for j in queue.reclamar_muertos(conn, timeout_s=timeout_s):
         if j["state"] == "queued":
@@ -74,7 +81,7 @@ def barrer(conn: psycopg.Connection, almacen: Almacen, *, migraciones: Path, rw:
     return res
 
 
-def salud(conn: psycopg.Connection, *, cola_max_s: int = 300, latido_max_s: int = 300) -> dict[str, list[dict]]:
+def salud(conn: psycopg.Connection, *, cola_max_s: int = 300, latido_max_s: int = LATIDO_AVISO_S) -> dict[str, list[dict]]:
     """La alarma de la cola: lo que debería haberse movido y no se mueve. Vacío = sano.
 
     - `sin_reclamar`: jobs `queued` más viejos de `cola_max_s`. Es la señal de que no hay worker vivo
@@ -91,6 +98,23 @@ def salud(conn: psycopg.Connection, *, cola_max_s: int = 300, latido_max_s: int 
             f"SELECT {cols} FROM control.jobs WHERE state IN ('claimed','ingesting') "
             "AND heartbeat_at < now() - make_interval(secs => %s) ORDER BY heartbeat_at", (latido_max_s,)).fetchall(),
     }
+
+
+def caducar(conn: psycopg.Connection, almacen: Almacen, job_id: str) -> dict:
+    """Caduca a mano un job `ready` o `failed` y borra ya su schema, sus roles y sus objetos.
+
+    Es lo que haría el barrido al llegar `expires_at`, sin esperar. Un job en cola o en marcha no se toca
+    (se cancela primero) y uno ya `expired` o `cancelled` no tiene nada que borrar: devuelve su estado.
+    """
+    with conn.transaction():
+        j = conn.execute("SELECT state, resources_dropped_at FROM control.jobs WHERE id = %s FOR UPDATE", (job_id,)).fetchone()
+        if j is None:
+            raise KeyError(job_id)
+        if j["state"] not in ("ready", "failed"):
+            return {"state": j["state"], "caducado": False}
+        conn.execute("UPDATE control.jobs SET state = 'expired', expires_at = LEAST(expires_at, now()) WHERE id = %s", (job_id,))
+        borrado = None if j["resources_dropped_at"] else borrar_recursos(conn, almacen, job_id, staging=True)
+    return {"state": "expired", "caducado": True, "borrado": borrado}
 
 
 def huerfanos(conn: psycopg.Connection) -> dict[str, list[str]]:
