@@ -118,3 +118,19 @@ conoce el tamaño de cada clave.
 - Un job es de un solo radar: sin mosaico.
 - Sin viento ni rayos históricos.
 - Sin productos 59, 61 y 62 pese a que el ORPG los genera.
+
+
+## Abiertos tras F2 (2026-11-05)
+
+- **`R2_KEY_PREFIX` en el pipeline.** Sin él rige D14 (no hay dos jobs vivos del mismo radar y horas).
+  Es un cambio pequeño y aditivo en `nexrad-l3-pipeline` (`ingest/storage/keys.py`); **no se ha tocado ese
+  repo**. Decide el dueño: pedir el cambio, o un bucket por job.
+- **Publicación durante el job.** Condición de la puerta de F3: el runner tiene que entregar productos al
+  pipeline por lotes mientras `play_a2` reproduce, no al final. Ver
+  [Resultados de F2](../referencia/f2-resultados.md#lo-que-f2-no-hace-todavia).
+- **Cómo se supervisa el worker dentro de la imagen** (el `ENTRYPOINT` heredado ignora el comando).
+- **Quién programa el barrido** (`jobs-admin sweep`) y con qué frecuencia; y el timeout de runner muerto
+  (hoy 600 s, sin medir con un job real largo).
+- **Credenciales y bucket reales** (R2 demo, base `lamula_demo`): del dueño.
+- **Número de conexiones por job**: el límite del rol de job es 8 (`CONNECTION LIMIT`); con el viewer de
+  F3 hay que medirlo junto con la nota de `server/dal/pg.ts`.

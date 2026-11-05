@@ -71,6 +71,11 @@ solo probó dos jobs en una dirección ([Hechos verificados](../referencia/orpg-
 lo que esta tanda busca es lo que se acumula con el reciclado (D3), que con dos jobs no se ve.
 Se corre con el runner ya detrás de la cola, no a mano.
 
+**Estado (2026-11-05): F2 cerrada en un entorno de desarrollo** (Postgres propio y S3 simulado, no R2 ni el
+Swarm). La puerta se pasó con el ORPG real —cancelación a los 30 s sin restos, dos jobs KAMX y KHGX a la
+vez sin interferencia— y la tanda de desgaste (12 jobs, ↔) pasó entera. Detalle, límites y lo que **no**
+está probado: [Resultados de F2](../referencia/f2-resultados.md). Decisiones nuevas: D13, D14, D15.
+
 ## F3 — Viewer demo
 
 Segunda instancia del `lamula-webviewer`: resolución de credenciales por token de resultado,
