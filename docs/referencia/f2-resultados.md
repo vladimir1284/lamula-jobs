@@ -64,6 +64,32 @@ de **un** volumen: un job de doce se parece más al coste de F1 (83 min) y no se
 6. **`radars.icao` queda `NULL`** en lo que publica el pipeline para estos sitios. El worker lo tolera y
    comprueba `site_id` y lat/lon; si el viewer necesita `icao`, es del pipeline.
 
+## Margen del timeout de runner muerto (2026-11-05)
+
+Un job de 12 volúmenes de Irma (KAMX, `play_a2 -m -d`) por la cola real, con el ORPG real y el worker bajo
+`jobs-supervisor`, y `now() - heartbeat_at` muestreado cada 2 s durante todo el job. Script:
+`jobs/e2e/timeout_runner.py`.
+
+| Medida | Valor |
+|---|---|
+| Duración del job (`queued` → `ready`) | 5055 s (84 min), intento 1, sin error |
+| Muestras de latido | 2523 |
+| Hueco entre latidos: mediana / p99 / **máximo** | 5,2 s / 9,7 s / **13,2 s** |
+| Huecos de más de 30 s | 0 |
+| Timeout del barrido durante la medida | 600 s, 45 veces el máximo observado |
+| Tope del paso del runner (`n*12*60+1800`) | 10440 s, 2,1 veces la duración real |
+| Schemas y roles huérfanos, antes y después | ninguno |
+
+**Qué dice y qué no.** El hilo de latido aguanta una hora y media con el ORPG a pleno sin un solo hueco
+relevante, así que 600 s no producía falsos positivos: ningún job sano habría sido reclamado. Era margen de
+sobra, y por eso se bajó a **120 s** el mismo día ([D16](../alcance/decisiones.md#d16-un-runner-sin-latido-durante-120-s-se-da-por-muerto-2026-11-05)).
+
+**Lo que no cubre:** un solo job y una sola corrida; solo KAMX; el hilo de latido bajo la carga de **un**
+job (no con el pipeline live compartiendo nodo, que sigue sin medirse); y el coste del timeout largo no se
+ha tocado: con un worker muerto, el ORPG huérfano sigue reproduciendo hasta que el timeout reclama el job (ver el runbook de F2).
+Bajar el timeout a 120 s (9 veces el máximo) lo recorta a ~2 min. Con contención en el nodo el hueco puede
+crecer: D16 dice cuándo revisarlo.
+
 ## Lo que F2 **no** hace todavía
 
 - **No publica mientras el job corre.** El runner reproduce todo, filtra por integridad (D11) y *después*

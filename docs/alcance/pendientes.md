@@ -130,7 +130,8 @@ conoce el tamaño de cada clave.
   [Resultados de F2](../referencia/f2-resultados.md#lo-que-f2-no-hace-todavia).
 - **Supervisión del worker: hecha (2026-11-05).** `jobs-supervisor` relanza el worker y `jobs-admin health` da la alarma de cola; probado con el ORPG real (muerte a mitad de job, imagen `job-runner:f2` reconstruida). Falta elegir el canal de aviso de `health`. Efecto observado: el ORPG huérfano sigue reproduciendo hasta el siguiente reclamo.
 - **Quién programa el barrido y la alarma.** `jobs-admin sweep --cada N` existe; falta decidir dónde corre como servicio y con qué N; y el timeout de runner muerto
-  (hoy 600 s, sin medir con un job real largo).
+  (120 s desde el 2026-11-05, D16; medido con un job real de 84 min: hueco máximo entre latidos 13,2 s, ver
+  [Resultados de F2](../referencia/f2-resultados.md#margen-del-timeout-de-runner-muerto-2026-11-05)).
 - **Credenciales y bucket reales** (R2 demo, base `lamula_demo`): del dueño.
 - **Número de conexiones por job**: el límite del rol de job es 8 (`CONNECTION LIMIT`); con el viewer de
   F3 hay que medirlo junto con la nota de `server/dal/pg.ts`.
