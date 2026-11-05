@@ -11,7 +11,7 @@ Perdí veinte minutos mirando la base de datos, los permisos y la red.
 
 La causa: la imagen del software de radar trae su propio punto de entrada, que arranca sus servicios y se queda dormido. **Ignora el comando que le pasas.** El mío nunca corrió. Todo lo demás funcionaba, y por eso no había nada que fallara.
 
-**Un sistema que no hace lo que le pides y no se queja es peor que uno que falla.** Lo que me habría ahorrado el rato es un latido: si nadie reclama el trabajo en un minuto, algo avisa. Ahora el diseño lo tiene.
+**Un sistema que no hace lo que le pides y no se queja es peor que uno que falla.** Lo que me habría ahorrado el rato es una alarma: si nadie reclama un trabajo en un minuto, algo avisa. Eso todavía no existe; está en la lista de pendientes.
 
 **«Está arrancado» no es «está trabajando».** Lo único que prueba que un proceso trabaja es el trabajo terminado.
 
