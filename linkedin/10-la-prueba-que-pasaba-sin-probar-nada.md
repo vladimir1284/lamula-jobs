@@ -5,27 +5,29 @@
 
 ---
 
-Una de las decisiones de diseño de nuestro servicio descansa en una pregunta concreta: si un mismo proceso de radar atiende primero un trabajo de Miami y después uno de Houston, ¿puede colarse algún producto de Miami en el resultado de Houston? Si la respuesta es sí, hay que levantar un proceso nuevo por trabajo, y eso cuesta minutos y dinero.
+**Contexto.** Estamos experimentando con el ORPG, el software con el que el Servicio Meteorológico Nacional de EEUU convierte los datos crudos de sus radares (NEXRAD) en productos meteorológicos. La idea es un servicio que reproduzca eventos pasados con el programa real. Si varias personas lo usaran, cada una pediría un radar distinto: unas Miami (KAMX), otras Houston (KHGX).
 
-La prueba es simple. Se procesa Miami, se cambia de sitio, se procesa Houston, y se busca cualquier rastro de Miami.
+**La pregunta de diseño.** Si un mismo ORPG procesa primero un trabajo de Miami y después uno de Houston, ¿puede colarse algún producto de Miami en el resultado de Houston? Si la respuesta es sí, hay que levantar un ORPG nuevo por trabajo, y eso cuesta minutos y dinero. Si es no, se puede reutilizar uno.
 
-Esta semana la hice y salió limpia: cero productos de Miami. Estuve a punto de escribir «pasa».
+La prueba es simple: procesar Miami, cambiar de radar, procesar Houston y buscar cualquier rastro de Miami.
 
-Lo que me detuvo fue mirar cuántos productos de **Houston** había. Tres. Y los tres eran mensajes de estado de 230 bytes, no productos de radar.
+La hice y salió limpia: cero productos de Miami. Estuve a punto de escribir «pasa».
 
-La prueba había «pasado» porque no había salido nada de nada. Pedí los volúmenes de Houston de la primera mitad del día, y ese radar no tiene volúmenes catalogados hasta las cuatro de la tarde. La herramienta de descarga me devolvió una lista vacía, sin error, y el reproductor dijo con toda calma que no encontraba ficheros. Un resultado correcto en el sentido más inútil posible: ausencia de Miami porque había ausencia de todo.
+**Lo que me detuvo** fue mirar cuántos productos de **Houston** había. Tres. Y los tres eran mensajes de estado de 230 bytes, no productos de radar.
 
-Repetí con volúmenes que sí existían. Dieciocho productos de Houston, todos con las coordenadas de Houston, ninguno con las de Miami. Y como control, pasé esos mismos dieciocho por la comprobación con las coordenadas de Miami y los rechazó los dieciocho. Ahora sí es una prueba: una que puede fallar y no falla.
+La prueba había «pasado» porque no había salido nada de nada. Pedí volúmenes de Houston de la primera mitad del día, y ese radar no tiene volúmenes catalogados hasta las cuatro de la tarde. Nuestra herramienta de descarga devolvió una lista vacía, sin error, y el reproductor del ORPG dijo con calma que no encontraba ficheros. Resultado correcto en el sentido más inútil posible: ausencia de Miami porque había ausencia de todo.
 
-Tres hábitos que me quedan:
+Repetí con volúmenes que sí existían. Dieciocho productos de Houston, todos con las coordenadas de Houston y ninguno con las de Miami. Y como control, pasé esos mismos dieciocho por la comprobación de coordenadas *de Miami*: los rechazó los dieciocho. Ahora sí es una prueba, porque puede fallar y no falla.
 
-**Una prueba de «no hay X» necesita demostrar que habría visto X.** Mi control negativo tardó diez segundos en escribirse y es lo único que convierte «no apareció» en «no existe».
+**Qué aprender de esto:**
 
-**Mira el denominador.** «Cero fallos» sobre cero casos es una frase gramaticalmente correcta y no dice nada.
+**Una prueba de «no hay X» tiene que demostrar que habría visto X.** El control negativo tardó diez segundos en escribirse y es lo único que convierte «no apareció» en «no existe».
 
-**Las herramientas que no fallan cuando no hacen nada son una trampa.** Una descarga que termina bien sin descargar nada produce justo este error. La mía ya falla con un mensaje claro.
+**Mira el denominador.** «Cero fallos» sobre cero casos es una frase correcta y no dice nada. Antes de celebrar un cero, pregunta sobre cuántos.
 
-El resultado honesto, con sus límites: un cambio de sitio, en una dirección, con carpetas de salida nuevas. Para el diseño que queremos es suficiente. Para una afirmación general, no lo es todavía.
+**Las herramientas que no fallan cuando no hacen nada son una trampa.** Una descarga que termina bien sin descargar produce justo este error. La nuestra ya falla con un mensaje claro cuando la lista sale vacía.
+
+**Los límites del resultado, tal cual:** un cambio de radar, en una dirección (Miami → Houston), con carpetas de salida nuevas. Para el diseño que queremos basta. Para una afirmación general, todavía no.
 
 *Nota: este borrador habla de integrar software de procesamiento de radar de terceros. Revisar con el dueño del producto qué se puede contar públicamente antes de publicarlo; hay una consulta de licencia abierta (ver `correspondencia/`).*
 

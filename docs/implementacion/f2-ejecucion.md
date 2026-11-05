@@ -70,8 +70,12 @@ docker exec -d job-f2 bash -lc 'jobs-supervisor --metricas /data/wear-f2.jsonl >
 **Supervisión (2026-11-05).** `jobs-supervisor` (`job-runner/supervisor.sh`) envuelve al worker: si
 sale, lo relanza con pausa creciente (2 s, 4 s … máx. 60 s; vuelve a 2 s si el worker aguantó ≥60 s) y
 reenvía SIGTERM, tanto en la pausa como con un job en curso. Probado con un worker falso que muere cada
-segundo; **no** probado con el worker real muriendo a mitad de job dentro del contenedor. Un job que
-se queda a medias lo recoge el barrido, no el supervisor.
+segundo, y **con el ORPG real** (2026-11-05, `jobs/e2e/muerte_worker.py`): `kill -9` al worker con
+`play_a2` reproduciendo → worker nuevo a los 2 s → el barrido (timeout 40 s en la prueba; 600 s en
+producción) devuelve el job a la cola → el worker nuevo lo termina `ready` en el intento 2, sin procesos
+del ORPG, schemas ni roles huérfanos. Un job que se queda a medias lo recoge el barrido, no el
+supervisor. Observado: el ORPG del worker muerto sigue reproduciendo hasta que el worker nuevo reclama
+el job y llama a `limpiar_orpg` (con el timeout de producción, hasta ~10 min con el ORPG ocupado).
 
 **Alarma de cola y barrido.** Se programan fuera del contenedor del runner:
 

@@ -128,7 +128,7 @@ conoce el tamaño de cada clave.
 - **Publicación durante el job.** Condición de la puerta de F3: el runner tiene que entregar productos al
   pipeline por lotes mientras `play_a2` reproduce, no al final. Ver
   [Resultados de F2](../referencia/f2-resultados.md#lo-que-f2-no-hace-todavia).
-- **Supervisión del worker: hecha a medias (2026-11-05).** `jobs-supervisor` lo relanza y `jobs-admin health` da la alarma de cola; falta probar la muerte del worker real a mitad de job y elegir el canal de aviso. La imagen `job-runner:f2` **no se ha reconstruido** con el supervisor.
+- **Supervisión del worker: hecha (2026-11-05).** `jobs-supervisor` relanza el worker y `jobs-admin health` da la alarma de cola; probado con el ORPG real (muerte a mitad de job, imagen `job-runner:f2` reconstruida). Falta elegir el canal de aviso de `health`. Efecto observado: el ORPG huérfano sigue reproduciendo hasta el siguiente reclamo.
 - **Quién programa el barrido y la alarma.** `jobs-admin sweep --cada N` existe; falta decidir dónde corre como servicio y con qué N; y el timeout de runner muerto
   (hoy 600 s, sin medir con un job real largo).
 - **Credenciales y bucket reales** (R2 demo, base `lamula_demo`): del dueño.
