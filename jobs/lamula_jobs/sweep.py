@@ -74,6 +74,25 @@ def barrer(conn: psycopg.Connection, almacen: Almacen, *, migraciones: Path, rw:
     return res
 
 
+def salud(conn: psycopg.Connection, *, cola_max_s: int = 300, latido_max_s: int = 300) -> dict[str, list[dict]]:
+    """La alarma de la cola: lo que debería haberse movido y no se mueve. Vacío = sano.
+
+    - `sin_reclamar`: jobs `queued` más viejos de `cola_max_s`. Es la señal de que no hay worker vivo
+      (o de que ninguno puede tomarlos); sin esta comprobación un job así espera para siempre sin error.
+    - `latido_viejo`: jobs reclamados cuyo latido pasó de `latido_max_s`. El barrido los recoge al
+      llegar a su `timeout_s`; esto avisa antes, o avisa de que el barrido no corre.
+    """
+    cols = "id, icao, state, created_at, heartbeat_at, attempts"
+    return {
+        "sin_reclamar": conn.execute(
+            f"SELECT {cols} FROM control.jobs WHERE state = 'queued' AND NOT cancel_requested "
+            "AND created_at < now() - make_interval(secs => %s) ORDER BY created_at", (cola_max_s,)).fetchall(),
+        "latido_viejo": conn.execute(
+            f"SELECT {cols} FROM control.jobs WHERE state IN ('claimed','ingesting') "
+            "AND heartbeat_at < now() - make_interval(secs => %s) ORDER BY heartbeat_at", (latido_max_s,)).fetchall(),
+    }
+
+
 def huerfanos(conn: psycopg.Connection) -> dict[str, list[str]]:
     """Schemas y roles job_* sin job vigente (con recursos aún sin borrar). Debería salir siempre vacío."""
     vivos = {r["id"] for r in conn.execute("SELECT id FROM control.jobs WHERE resources_dropped_at IS NULL")}

@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -46,7 +47,11 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("--days", type=int, help="caducidad; sin ella no caduca")
     r = sub.add_parser("revoke", help="revoca un token (por id)")
     r.add_argument("token_id")
-    sub.add_parser("sweep", help="runners muertos, caducidad y borrado de lo cancelado o caducado")
+    w = sub.add_parser("sweep", help="runners muertos, caducidad y borrado de lo cancelado o caducado")
+    w.add_argument("--cada", type=int, metavar="SEGUNDOS", help="en bucle, cada tantos segundos (para un servicio); sin él, una vez")
+    h = sub.add_parser("health", help="alarma de cola: jobs sin reclamar o con latido viejo; sale con 1 si hay alguno")
+    h.add_argument("--cola-max", type=int, default=300, help="segundos que un job puede esperar en cola (300)")
+    h.add_argument("--latido-max", type=int, default=300, help="segundos sin latido de un job en marcha (300)")
     sub.add_parser("orphans", help="schemas y roles job_* sin job vigente; sale con 1 si hay alguno")
     args = ap.parse_args(argv)
     conn = conectar(env("JOBS_ADMIN_DSN"))
@@ -59,7 +64,21 @@ def main(argv: list[str] | None = None) -> int:
         conn.execute("UPDATE control.access_tokens SET revoked_at = now() WHERE id = %s AND revoked_at IS NULL", (args.token_id,))
     elif args.orden == "sweep":
         s = Secrets.from_env()
-        print(json.dumps(sweep.barrer(conn, almacen_desde_entorno(), migraciones=Path(env("PIPELINE_MIGRATIONS")), rw=s.rw, ro=s.ro), default=str))
+        almacen, mig = almacen_desde_entorno(), Path(env("PIPELINE_MIGRATIONS"))
+        while True:
+            try:
+                print(json.dumps(sweep.barrer(conn, almacen, migraciones=mig, rw=s.rw, ro=s.ro), default=str), flush=True)
+            except Exception as exc:  # noqa: BLE001 — en bucle un fallo se anota y se reintenta; a mano, se propaga
+                if not args.cada:
+                    raise
+                print(json.dumps({"error": f"{type(exc).__name__}: {exc}"}), file=sys.stderr, flush=True)
+            if not args.cada:
+                break
+            time.sleep(args.cada)
+    elif args.orden == "health":
+        h = sweep.salud(conn, cola_max_s=args.cola_max, latido_max_s=args.latido_max)
+        print(json.dumps(h, default=str))
+        return 1 if h["sin_reclamar"] or h["latido_viejo"] else 0
     elif args.orden == "orphans":
         h = sweep.huerfanos(conn)
         print(json.dumps(h))

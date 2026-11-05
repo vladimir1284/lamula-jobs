@@ -58,15 +58,30 @@ jobs-admin issue --email yo@ejemplo --tier interno --note "e2e"      # el token 
 docker build -f job-runner/Dockerfile --build-context pipeline=../nexrad-l3-pipeline -t job-runner:f2 .
 docker run -d --name job-f2 --hostname orpg-job --network lamula-f2 --stop-timeout 60 \
   --env-file f2.env -v "$PWD/f0-run:/data" job-runner:f2
-docker exec -d job-f2 bash -lc 'jobs-worker --metricas /data/wear-f2.jsonl >> /data/worker-f2.log 2>&1'
+docker exec -d job-f2 bash -lc 'jobs-supervisor --metricas /data/wear-f2.jsonl >> /data/worker-f2.log 2>&1'
 ```
 
 !!! danger "El `ENTRYPOINT` de la imagen ignora el comando"
     `entrypoint.sh` (heredado del ORPG de producción) arranca `mrpg` y se queda en `sleep infinity`; **no
     ejecuta el `CMD`**. Pasar `bash -lc jobs-worker` a `docker run` no lanza nada y el job se queda en
     la cola sin ningún error (se perdieron 20 minutos de esta manera). El worker se lanza con
-    `docker exec`, como en F1. Para el despliegue habrá que decidir cómo se supervisa: un `exec`
-    detrás del entrypoint o un entrypoint propio de la imagen del runner.
+    `docker exec`, como en F1.
+
+**Supervisión (2026-11-05).** `jobs-supervisor` (`job-runner/supervisor.sh`) envuelve al worker: si
+sale, lo relanza con pausa creciente (2 s, 4 s … máx. 60 s; vuelve a 2 s si el worker aguantó ≥60 s) y
+reenvía SIGTERM, tanto en la pausa como con un job en curso. Probado con un worker falso que muere cada
+segundo; **no** probado con el worker real muriendo a mitad de job dentro del contenedor. Un job que
+se queda a medias lo recoge el barrido, no el supervisor.
+
+**Alarma de cola y barrido.** Se programan fuera del contenedor del runner:
+
+```bash
+jobs-admin health            # sale con 1 si hay jobs en cola >300 s o en marcha sin latido >300 s
+jobs-admin sweep --cada 60   # el barrido en bucle, como servicio; sin --cada, una vez
+```
+
+`health` está pensada para un chequeo periódico (cron, o el healthcheck de un servicio) que avise al
+dueño; qué canal de aviso se usa sigue abierto.
 
 ## 6. Las puertas
 

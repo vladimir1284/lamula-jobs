@@ -67,3 +67,21 @@ def test_alta_incompleta_no_deja_job_ni_schema(api_conn, admin, token, tmp_path)
                           entradas=[queue.Entrada(k) for k in claves("KAMX", dia_unico(), 1)])
     assert admin.execute("SELECT count(*) AS n FROM control.jobs").fetchone()["n"] == antes
     assert sweep.huerfanos(admin) == base
+
+
+def test_salud_avisa_de_cola_sin_worker_y_de_latido_viejo(api_conn, admin, token):
+    tok = queue.validar_token(admin, token["token"])
+    j = service.crear_job(api_conn, tok, icao="KAMX", secrets=SECRETS, migraciones=MIGRACIONES,
+                          entradas=[queue.Entrada(k) for k in claves("KAMX", dia_unico(), 1)])
+    mio = lambda h: [x["id"] for x in h if x["id"] == j["id"]]
+    s = sweep.salud(admin)
+    assert not mio(s["sin_reclamar"]) and not mio(s["latido_viejo"])          # recién en cola: sano
+    admin.execute("UPDATE control.jobs SET created_at = now() - interval '10 minutes' WHERE id=%s", (j["id"],))
+    assert mio(sweep.salud(admin)["sin_reclamar"])                             # nadie lo toma: alarma
+    assert not mio(sweep.salud(admin, cola_max_s=3600)["sin_reclamar"])        # el umbral se respeta
+    admin.execute("UPDATE control.jobs SET state='ingesting', claimed_by='r', heartbeat_at = now() - interval '10 minutes' WHERE id=%s", (j["id"],))
+    s = sweep.salud(admin)
+    assert mio(s["latido_viejo"]) and not mio(s["sin_reclamar"])               # reclamado y callado: otra alarma
+    admin.execute("UPDATE control.jobs SET state='cancelled' WHERE id=%s", (j["id"],))
+    s = sweep.salud(admin)
+    assert not mio(s["latido_viejo"]) and not mio(s["sin_reclamar"])           # terminado: no cuenta
