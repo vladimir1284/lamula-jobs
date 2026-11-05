@@ -29,13 +29,16 @@ def _orpg(args: argparse.Namespace) -> int:
     tmp = sal.with_name(sal.name + ".orpg")  # lo que escribe nbtcp, antes de filtrar
     log = sal.with_name(sal.name + ".log")
     orpg.limpiar(tmp)
+    sal.mkdir(parents=True, exist_ok=True)  # el worker publica desde aquí mientras el ORPG reproduce
+    vistos: dict = {}
+    sondear = lambda: productos.soltar(tmp, sal, vistos)
     try:
         orpg.adaptar_sitio(args.icao)
         orpg.arrancar(Path(args.logs) / "startup.out")
         orpg.abrir_salida(args.icao, tmp, clave=args.clave)
         # ~6,5 min por volumen de KAMX medidos en F0 (docs/referencia/velocidad-reproduccion.md)
-        orpg.reproducir(ent, log, timeout=args.min_por_volumen * 60 * len(vols))
-        orpg.esperar_reposo(tmp, reposo=args.reposo, timeout=600)
+        orpg.reproducir(ent, log, timeout=args.min_por_volumen * 60 * len(vols), sondeo=args.sondeo, al_sondear=sondear)
+        orpg.esperar_reposo(tmp, reposo=args.reposo, timeout=600, al_sondear=sondear)
     except BaseException:
         try:
             orpg.cerrar()  # no tapa el error de origen con uno de cierre
@@ -43,14 +46,14 @@ def _orpg(args: argparse.Namespace) -> int:
             print(f"aviso: el cierre también falló: {exc}", file=sys.stderr)
         raise
     orpg.cerrar()
-    rev = productos.revisar(tmp)
-    sal.mkdir(parents=True, exist_ok=True)
+    rev = productos.revisar(tmp)  # lo que `soltar` aún tenía por ver; los truncados no salen nunca
     for p in rev.buenos:
         shutil.move(p, sal / p.name)
     orpg.limpiar(tmp)
-    print(f"{len(rev.buenos)} productos, {len(rev.truncados)} truncados descartados, "
+    total = sum(1 for p in sal.iterdir() if p.is_file())
+    print(f"{total} productos, {len(rev.truncados)} truncados descartados, "
           f"{len(rev.ignorados)} ficheros que no son productos, {time.monotonic() - t0:.0f} s", flush=True)
-    return 1 if rev.truncados or not rev.buenos else 0
+    return 1 if rev.truncados or not total else 0
 
 
 def _decodificar(args: argparse.Namespace) -> int:
@@ -82,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     o.add_argument("--max-volumenes", type=int, default=12)
     o.add_argument("--max-hueco-min", type=int, default=30, help="umbral provisional: pendiente del dueño")
     o.add_argument("--min-por-volumen", type=float, default=10.0, help="tope de play_a2 por volumen")
+    o.add_argument("--sondeo", type=float, default=5.0, help="s entre pasadas que sueltan los productos enteros a --salida")
     o.add_argument("--reposo", type=float, default=90.0, help="s sin productos nuevos para dar el job por acabado")
     o.set_defaults(func=_orpg)
     d = sub.add_parser("decodificar", help="productos a COGs en disco, sin publicar")

@@ -62,7 +62,8 @@ def main() -> int:
     fila = db.execute("SELECT state, attempts, error FROM control.jobs WHERE id=%s", (j["id"],)).fetchone()
     res = {"job": j["id"], "volumenes": len(VOLS), "estado": dict(fila), "estados": estados, "duracion_s": round(time.monotonic() - t0),
            "muestras": len(gaps), "gap_max_s": gaps[-1] if gaps else None, "gap_p50": q(.5), "gap_p99": q(.99),
-           "huecos_mayores_30s": largos[:50], "timeout_barrido_s": 600,  # el de la corrida del 2026-11-05; hoy es sweep.TIMEOUT_MUERTO_S (120, D16) "tope_runner_s": len(VOLS) * 12 * 60 + 1800,
+           "huecos_mayores_30s": largos[:50], "timeout_barrido_s": 600,  # el de la corrida del 2026-11-05; hoy es sweep.TIMEOUT_MUERTO_S (120, D16)
+           "tope_runner_s": len(VOLS) * 12 * 60 + 1800,
            "huerfanos_antes": antes, "huerfanos_despues": lib.huerfanos()}
     SALIDA.write_text(json.dumps(res, indent=1, default=str))
     print(json.dumps({k: v for k, v in res.items() if k != "huecos_mayores_30s"}, indent=1, default=str))

@@ -44,3 +44,27 @@ def revisar(directorio: Path) -> Revision:
         else:
             rev.truncados.append(ruta)
     return rev
+
+
+def soltar(origen: Path, destino: Path, vistos: dict[str, tuple[int, int]]) -> list[Path]:
+    """Mueve a `destino` los productos que ya están enteros y quietos; el resto se queda en `origen`.
+
+    Se llama cada pocos segundos *mientras* `play_a2` reproduce, para publicar por lotes (puerta de F3).
+    Un producto sale solo si pasa `entero()` y si su (tamaño, mtime) no cambió desde la llamada anterior
+    (`vistos` guarda esa foto). La segunda condición cubre el caso raro de un escritor que aún no ha
+    terminado y cuya cabecera ya declara la longitud final. Los truncados de verdad nunca salen: los
+    encuentra `revisar()` al final y el job falla (D11). El movimiento es un `rename` en el mismo
+    sistema de ficheros, así que el destino nunca ve un fichero a medias.
+    """
+    destino.mkdir(parents=True, exist_ok=True)
+    sueltos: list[Path] = []
+    for ruta in sorted(p for p in origen.iterdir() if p.is_file() and es_producto(p)):
+        st = ruta.stat()
+        foto = (st.st_size, st.st_mtime_ns)
+        previa, vistos[ruta.name] = vistos.get(ruta.name), foto
+        if previa == foto and entero(ruta):
+            nuevo = destino / ruta.name
+            ruta.rename(nuevo)
+            vistos.pop(ruta.name, None)
+            sueltos.append(nuevo)
+    return sueltos

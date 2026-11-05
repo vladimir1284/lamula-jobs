@@ -77,19 +77,35 @@ def abrir_salida(icao: str, destino: Path, *, clave: str = "passwd", timeout: fl
         raise OrpgError(f"nbtcp: código {res.returncode}\n{res.stdout[-500:]}{res.stderr[-500:]}")
 
 
-def reproducir(entradas: Path, log: Path, *, timeout: float) -> None:
-    """`play_a2 -m -d` (D6). Sin `-R`: el producto conserva el `vol_time` original."""
+def reproducir(entradas: Path, log: Path, *, timeout: float, sondeo: float = 5.0, al_sondear=None) -> None:
+    """`play_a2 -m -d` (D6). Sin `-R`: el producto conserva el `vol_time` original.
+
+    Cada `sondeo` s llama a `al_sondear()` mientras `play_a2` sigue vivo: es el gancho de la publicación
+    por lotes. Si `al_sondear` lanza, `play_a2` se mata antes de propagar el error.
+    """
     with log.open("wb") as fh:
+        p = subprocess.Popen(["play_a2", "-m", "-d", str(entradas)], stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+        limite = time.monotonic() + timeout
         try:
-            res = subprocess.run(["play_a2", "-m", "-d", str(entradas)], stdout=fh, stderr=subprocess.STDOUT,
-                                 stdin=subprocess.DEVNULL, timeout=timeout)
-        except subprocess.TimeoutExpired as exc:
-            raise OrpgError(f"play_a2 no acabó en {timeout:.0f} s") from exc
-    if res.returncode != 0:
-        raise OrpgError(f"play_a2: código {res.returncode} (ver {log})")
+            while True:
+                try:
+                    rc = p.wait(timeout=max(0.1, min(sondeo, limite - time.monotonic())))
+                    break
+                except subprocess.TimeoutExpired:
+                    if time.monotonic() >= limite:
+                        raise OrpgError(f"play_a2 no acabó en {timeout:.0f} s") from None
+                    if al_sondear:
+                        al_sondear()
+        except BaseException:
+            if p.poll() is None:
+                p.kill()
+                p.wait()
+            raise
+    if rc != 0:
+        raise OrpgError(f"play_a2: código {rc} (ver {log})")
 
 
-def esperar_reposo(destino: Path, *, reposo: float, timeout: float) -> None:
+def esperar_reposo(destino: Path, *, reposo: float, timeout: float, al_sondear=None) -> None:
     """Hasta que no aparece ningún producto nuevo durante `reposo` segundos.
 
     Es una heurística, y se sabe: el ORPG sigue procesando después de que `play_a2` sale y no
@@ -103,6 +119,8 @@ def esperar_reposo(destino: Path, *, reposo: float, timeout: float) -> None:
     limite = desde + timeout
     while time.monotonic() < limite:
         time.sleep(5)
+        if al_sondear:
+            al_sondear()
         ahora = cuenta()
         if ahora != visto:
             visto, desde = ahora, time.monotonic()

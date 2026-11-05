@@ -76,6 +76,27 @@ class Productos(unittest.TestCase):
             self.assertEqual([p.name for p in rev.truncados], ["corto"])
             self.assertEqual(sorted(p.name for p in rev.ignorados), ["GSM_1", "P173_2"])
 
+    def test_soltar_solo_lo_entero_y_quieto(self):
+        with tempfile.TemporaryDirectory() as t:
+            o, d = Path(t) / "o", Path(t) / "d"
+            o.mkdir()
+            cuerpo = struct.pack(">hhii", 153, 1, 2, 100) + b"\0" * 88
+            (o / "bueno").write_bytes(b"\0" * 30 + cuerpo)
+            (o / "corto").write_bytes(b"\0" * 30 + cuerpo[:60])  # truncado de verdad: no sale nunca
+            (o / "GSM_1").write_bytes(b"x")
+            vistos: dict = {}
+            self.assertEqual(productos.soltar(o, d, vistos), [])  # primera foto: nada sale aún
+            self.assertEqual([p.name for p in productos.soltar(o, d, vistos)], ["bueno"])
+            self.assertEqual(sorted(p.name for p in o.iterdir()), ["GSM_1", "corto"])
+            self.assertEqual([p.name for p in d.iterdir()], ["bueno"])
+            self.assertEqual(productos.soltar(o, d, vistos), [])
+            # un escritor que sigue: la cabecera ya declara 100 pero el fichero crece; solo sale al quedarse quieto
+            (o / "creciendo").write_bytes(b"\0" * 30 + cuerpo[:40])
+            productos.soltar(o, d, vistos)
+            (o / "creciendo").write_bytes(b"\0" * 30 + cuerpo)
+            self.assertEqual(productos.soltar(o, d, vistos), [])  # cambió desde la foto anterior
+            self.assertEqual([p.name for p in productos.soltar(o, d, vistos)], ["creciendo"])
+
 
 if __name__ == "__main__":
     unittest.main()

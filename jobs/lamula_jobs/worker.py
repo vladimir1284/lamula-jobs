@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import signal
 import socket
 import subprocess
@@ -123,18 +124,28 @@ class Vigilante(threading.Thread):
                     pass  # un tropiezo de red no cancela el job; si dura, el barrido lo reclamará
 
 
-def _correr(cmd: list[str], *, log: Path, cwd: Path, env_extra: dict | None = None, timeout: float, vig: Vigilante | None = None, proc_box: list | None = None) -> int:
-    """Subproceso en su propio grupo, con timeout y con parada ordenada si el vigilante pide cancelar."""
+def _correr(cmd: list[str], *, log: Path, cwd: Path, env_extra: dict | None = None, timeout: float, vig: Vigilante | None = None, proc_box: list | None = None,
+            cada=None, cada_s: float = 15.0) -> int:
+    """Subproceso en su propio grupo, con timeout y con parada ordenada si el vigilante pide cancelar.
+
+    Con `cada`, lo llama cada `cada_s` s mientras el subproceso vive (publicación por lotes). Si lanza, el
+    subproceso sigue vivo: quien llama lo para (`ejecutar` lo hace en su `finally`).
+    """
     e = {**os.environ, **(env_extra or {})}
     with log.open("ab") as fh:
         p = subprocess.Popen(cmd, stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=e, cwd=cwd, start_new_session=True)  # nbtcp escribe su log en el cwd
         if proc_box is not None:
             proc_box.append(p)
-        try:
-            return p.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            _parar(p)
-            raise JobFallido(f"{cmd[0]} {cmd[1] if len(cmd) > 1 else ''}: sin acabar en {timeout:.0f} s")
+        limite = time.monotonic() + timeout
+        while True:
+            resto = limite - time.monotonic()
+            try:
+                return p.wait(timeout=max(0.1, min(cada_s, resto)) if cada else timeout)
+            except subprocess.TimeoutExpired:
+                if resto <= cada_s or not cada:
+                    _parar(p)
+                    raise JobFallido(f"{cmd[0]} {cmd[1] if len(cmd) > 1 else ''}: sin acabar en {timeout:.0f} s")
+                cada()
 
 
 def _parar(p: subprocess.Popen, gracia: float = 150) -> None:
@@ -157,6 +168,45 @@ def limpiar_orpg() -> None:
         subprocess.run(["pkill", "-x", n], capture_output=True)
 
 
+class Publicador:
+    """Publica por lotes lo que el runner va dejando en `prod/` mientras el ORPG reproduce (puerta de F3).
+
+    `paso()` coge los ficheros nuevos, los copia a un directorio de lote (`l3proc watch` consume su entrada)
+    y llama a `publicar(dir)`, que devuelve `(procesados, fallidos)`. Un lote con fallidos hace fallar el job.
+    `tras_lote()` corre después de cada lote bueno: verifica coordenadas y fija `last_seen_at`, de modo que un
+    `change_radar` que no surtió efecto se ve con el primer lote y no con el último.
+    """
+
+    def __init__(self, prod: Path, trabajo: Path, publicar, tras_lote, *, cancelado=lambda: False, aviso=print) -> None:
+        self.prod, self.trabajo, self.publicar, self.tras_lote = prod, trabajo, publicar, tras_lote
+        self.cancelado, self.aviso = cancelado, aviso
+        self.hechos: set[str] = set()
+        self.lotes = 0
+        self.procesados = 0
+        self.t0 = time.monotonic()
+
+    def paso(self) -> int:
+        if self.cancelado():
+            raise JobCancelado()
+        nuevos = sorted(p for p in (self.prod.iterdir() if self.prod.is_dir() else []) if p.is_file() and p.name not in self.hechos)
+        if not nuevos:
+            return 0
+        self.lotes += 1
+        lote = self.trabajo / f"lote-{self.lotes:03d}"
+        lote.mkdir(parents=True)
+        for p in nuevos:
+            shutil.copy2(p, lote / p.name)
+        proc, fall = self.publicar(lote)
+        shutil.rmtree(lote, ignore_errors=True)
+        if fall or proc < 1:
+            raise JobFallido(f"lote {self.lotes}: {proc} procesados y {fall} fallidos")
+        self.hechos.update(p.name for p in nuevos)
+        self.procesados += proc
+        self.tras_lote()
+        self.aviso(f"lote {self.lotes}: +{len(nuevos)} productos, {self.procesados} en total, a los {time.monotonic() - self.t0:.0f} s", flush=True)
+        return len(nuevos)
+
+
 def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
     """Ejecuta un job reclamado. Devuelve el estado final; no deja nada en disco."""
     jid, icao = job["id"], job["icao"]
@@ -171,31 +221,37 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
         entradas = queue.entradas_de(rconn, jid)
         bajar_entradas(cfg, entradas, w / "in")
         n = len(entradas)
+        rw_user, rw_pw = tenancy.rol_rw(jid), tenancy.password(cfg.secrets.rw, "rw", jid)
+        env_pg = {"R2_ENDPOINT": cfg.r2_endpoint, "R2_BUCKET": cfg.r2_bucket, "R2_ACCESS_KEY_ID": cfg.r2_key, "R2_SECRET_ACCESS_KEY": cfg.r2_secret,
+                  "PG_HOST": cfg.pg_host, "PG_PORT": cfg.pg_port, "PG_DB": cfg.pg_db, "PG_USER": rw_user, "PG_PASSWORD": rw_pw}
+
+        def publicar(lote: Path) -> tuple[int, int]:
+            """El pipeline escribe con el rol del job, con `search_path` fijo a su schema (D4)."""
+            log = w / "l3proc.log"
+            log.write_text("")
+            rc = _correr([*cfg.l3proc_cmd, "watch", str(lote), "--once"], log=log, cwd=w, timeout=1800, env_extra=env_pg)
+            m = STATS.search(log.read_text(errors="replace"))
+            if rc != 0 or not m:
+                raise JobFallido("l3proc no publicó limpio: " + _cola(log))
+            return int(m[1]), int(m[2])
+
+        def tras_lote() -> None:
+            with psycopg.connect(host=cfg.pg_host, port=cfg.pg_port, dbname=cfg.pg_db, user=rw_user, password=rw_pw, autocommit=True, row_factory=dict_row) as rw:
+                verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao))
+                # El selector de días del viewer se ancla a last_seen_at; sin esto un job histórico sale vacío.
+                rw.execute("UPDATE radars SET last_seen_at = %s", (job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"),))
+
+        pub = Publicador(w / "prod", w, publicar, tras_lote, cancelado=lambda: vig.cancelar)
         rc = _correr([*cfg.runner_cmd, "orpg", "--icao", icao, "--entradas", str(w / "in"), "--salida", str(w / "prod"),
                       "--logs", str(w / "log"), "--max-volumenes", str(n)],
-                     log=w / "runner.log", cwd=w, timeout=n * 12 * 60 + 1800, proc_box=box)
+                     log=w / "runner.log", cwd=w, timeout=n * 12 * 60 + 1800, proc_box=box, cada=pub.paso)
         if vig.cancelar:
             raise JobCancelado()
         if rc != 0:
             raise JobFallido("el ORPG no produjo los productos: " + _cola(w / "runner.log"))
-        # Publicar: el pipeline escribe con el rol del job, con `search_path` fijo a su schema (D4).
-        rw_user, rw_pw = tenancy.rol_rw(jid), tenancy.password(cfg.secrets.rw, "rw", jid)
-        copia = w / "entrada"
-        import shutil
-        shutil.copytree(w / "prod", copia)  # `l3proc watch` consume su entrada
-        rc = _correr([*cfg.l3proc_cmd, "watch", str(copia), "--once"], log=w / "l3proc.log", cwd=w, timeout=3600, proc_box=box, env_extra={
-            "R2_ENDPOINT": cfg.r2_endpoint, "R2_BUCKET": cfg.r2_bucket, "R2_ACCESS_KEY_ID": cfg.r2_key, "R2_SECRET_ACCESS_KEY": cfg.r2_secret,
-            "PG_HOST": cfg.pg_host, "PG_PORT": cfg.pg_port, "PG_DB": cfg.pg_db, "PG_USER": rw_user, "PG_PASSWORD": rw_pw})
-        if vig.cancelar:
-            raise JobCancelado()
-        m = STATS.search((w / "l3proc.log").read_text(errors="replace"))
-        if rc != 0 or not m or int(m[2]) or not int(m[1]):
-            raise JobFallido("l3proc no publicó limpio: " + _cola(w / "l3proc.log"))
-        with psycopg.connect(host=cfg.pg_host, port=cfg.pg_port, dbname=cfg.pg_db, user=rw_user, password=rw_pw, autocommit=True, row_factory=dict_row) as rw:
-            verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao))
-            # El selector de días del viewer se ancla a last_seen_at; sin esto un job histórico sale vacío.
-            ultimo = job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S")
-            rw.execute("UPDATE radars SET last_seen_at = %s", (ultimo,))
+        pub.paso()  # el último lote: lo que salió desde el último sondeo
+        if not pub.procesados:
+            raise JobFallido("l3proc no publicó ningún producto")
         if vig.cancelar:
             raise JobCancelado()
         queue.terminar(rconn, jid, cfg.nombre)
@@ -214,7 +270,6 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
         if box:
             _parar(box[0], gracia=30)
         limpiar_orpg()
-        import shutil
         shutil.rmtree(w, ignore_errors=True)
         print(f"job {jid} {icao}: {time.monotonic() - t0:.0f} s", flush=True)
 

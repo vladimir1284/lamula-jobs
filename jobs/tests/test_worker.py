@@ -70,3 +70,38 @@ def test_bajar_entradas_falla_limpio_si_falta_una_clave(almacen, tmp_path):
     assert (tmp_path / "in/KAMX20170910_170248_V06").read_bytes() == b"x"
     with pytest.raises(worker.JobFallido, match="no se pudo bajar"):
         worker.bajar_entradas(Cfg, [{"staging_key": "staging/j/no-existe"}], tmp_path / "in2")
+
+
+def test_publicador_publica_por_lotes_y_no_repite(tmp_path):
+    prod = tmp_path / "prod"
+    prod.mkdir()
+    vistos, tras = [], []
+
+    def publicar(lote):
+        vistos.append(sorted(p.name for p in lote.iterdir()))
+        return len(vistos[-1]), 0
+
+    pub = worker.Publicador(prod, tmp_path, publicar, lambda: tras.append(1))
+    assert pub.paso() == 0 and not vistos                       # nada que publicar: no se llama
+    (prod / "a").write_bytes(b"1")
+    (prod / "b").write_bytes(b"2")
+    assert pub.paso() == 2 and vistos == [["a", "b"]]
+    (prod / "c").write_bytes(b"3")
+    assert pub.paso() == 1 and vistos[-1] == ["c"]              # solo lo nuevo
+    assert pub.paso() == 0 and len(vistos) == 2
+    assert pub.procesados == 3 and pub.lotes == 2 and len(tras) == 2
+    assert sorted(p.name for p in prod.iterdir()) == ["a", "b", "c"]  # prod no se consume: el lote es una copia
+    assert not list(tmp_path.glob("lote-*"))                    # y los lotes se limpian
+
+
+def test_publicador_falla_con_fallidos_y_respeta_la_cancelacion(tmp_path):
+    prod = tmp_path / "prod"
+    prod.mkdir()
+    (prod / "a").write_bytes(b"1")
+    pub = worker.Publicador(prod, tmp_path, lambda lote: (1, 1), lambda: None)
+    with pytest.raises(worker.JobFallido, match="1 fallidos"):
+        pub.paso()
+    assert pub.procesados == 0                                  # un lote malo no cuenta
+    cancelado = worker.Publicador(prod, tmp_path, lambda lote: (1, 0), lambda: None, cancelado=lambda: True)
+    with pytest.raises(worker.JobCancelado):
+        cancelado.paso()
