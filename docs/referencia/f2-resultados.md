@@ -90,11 +90,23 @@ ha tocado: con un worker muerto, el ORPG huérfano sigue reproduciendo hasta que
 Bajar el timeout a 120 s (9 veces el máximo) lo recorta a ~2 min. Con contención en el nodo el hueco puede
 crecer: D16 dice cuándo revisarlo.
 
-## Lo que F2 **no** hace todavía
+## Publicación durante el job (2026-11-05)
 
-- **No publica mientras el job corre.** El runner reproduce todo, filtra por integridad (D11) y *después*
-  llama a `l3proc watch --once`. El enlace de resultado funcionaría cuando el job está `ready`, no
-  «mientras» (D6). Es **el** requisito de la puerta de F3 y exige publicar por lotes durante la reproducción.
+Script: `jobs/e2e/vivo.py`; serie completa en `docs/referencia/f2-vivo-2026-11-05.json`. Job real de 3
+volúmenes de Irma (KAMX) por la cola, con el ORPG, muestreando `rasters` cada 5 s ([D17](../alcance/decisiones.md)).
+
+| Medida | Valor |
+|---|---|
+| Primer raster desde `ingesting` | 80 s |
+| Filas de `rasters` con el job vivo | 1 → 3 → 4 → 5 → 9 → 10 → 11 → 15 (8 pasos) |
+| Duración del job | 1366 s; último raster a los 1211 s |
+| Rasters finales | 15, ningún huérfano |
+
+Los productos salen en ráfagas (uno por volumen y por producto), no a ritmo constante. **Límites:** un job,
+3 volúmenes, KAMX; no se comparó número a número con la publicación al final (sí 15 rasters, ninguno
+fallido); los ~155 s entre el último raster y `ready` son la espera de reposo (90 s) y el cierre del ORPG.
+
+## Lo que F2 **no** hace todavía
 - **No lista ni descarga el catálogo de AWS** (D10): `jobs-api` acepta claves ya en staging. El selector es F4.
 - **El bucket R2 y la base `lamula_demo` de verdad no existen**: hacen falta credenciales del dueño.
 - **El cron del barrido no está programado**: `jobs-admin sweep` existe y está probado, falta quien lo llame.

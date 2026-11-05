@@ -125,7 +125,7 @@ conoce el tamaño de cada clave.
 - **`R2_KEY_PREFIX` en el pipeline.** Pedido en [nexrad-l3-pipeline#9](https://github.com/vladimir1284/nexrad-l3-pipeline/issues/9) (2026-11-05). Sin él rige D14 (no hay dos jobs vivos del mismo radar y horas).
   Es un cambio pequeño y aditivo en `nexrad-l3-pipeline` (`ingest/storage/keys.py`); **no se ha tocado ese
   repo**. Decide el dueño: pedir el cambio, o un bucket por job.
-- **Publicación durante el job.** Condición de la puerta de F3: el runner tiene que entregar productos al
+- **Publicación durante el job: hecha (2026-11-05, D17).** Era la condición de la puerta de F3: el runner tiene que entregar productos al
   pipeline por lotes mientras `play_a2` reproduce, no al final. Ver
   [Resultados de F2](../referencia/f2-resultados.md#lo-que-f2-no-hace-todavia).
 - **Supervisión del worker: hecha (2026-11-05).** `jobs-supervisor` relanza el worker y `jobs-admin health` da la alarma de cola; probado con el ORPG real (muerte a mitad de job, imagen `job-runner:f2` reconstruida). Falta elegir el canal de aviso de `health`. Efecto observado: el ORPG huérfano sigue reproduciendo hasta el siguiente reclamo.

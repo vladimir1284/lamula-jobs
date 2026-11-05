@@ -84,6 +84,9 @@ rayos ocultas en jobs históricos.
 
 **Puerta:** un enlace abierto **mientras** el job corre muestra los productos apareciendo.
 
+**Estado (2026-11-05):** el requisito previo, publicar por lotes durante el job, está hecho (D17): el primer
+producto aparece a los 80 s y las filas crecen en 8 pasos. Falta el lado del viewer.
+
 ## F4 — Selector y casos preparados
 
 Catálogo de sitios y días desde `jobs-api`, selección de rango, estimación de duración, menú de

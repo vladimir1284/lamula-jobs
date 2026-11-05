@@ -184,3 +184,15 @@ con contención el hueco puede crecer. Es una constante (`sweep.TIMEOUT_MUERTO_S
 `jobs-admin expire <job>` (misma fecha) caduca a mano un job `ready` o `failed` y borra ya su schema,
 roles y objetos. Sin él, un job `ready` bloquea su radar y sus horas (D14) hasta que caduca, meses
 después, y no había otra forma de liberarlo. En cola o en marcha no actúa: se cancela primero.
+
+## D17 — El runner publica por lotes mientras el ORPG reproduce (2026-11-05)
+
+`runner orpg` suelta a `prod/` cada producto que ya está entero (`entero()`) y quieto (mismo tamaño y mtime
+en dos sondeos de 5 s); el worker, cada 15 s, copia lo nuevo a un directorio de lote y lanza
+`l3proc watch --once` sobre él. Tras cada lote verifica coordenadas y fija `last_seen_at`, así un
+`change_radar` que no surtió efecto falla con el primer lote y no con el último. Un lote con fallidos hace
+fallar el job; un truncado de verdad nunca sale de `tmp` y lo encuentra `revisar()` al final (D11).
+
+Motivo: la puerta de F3 es que un enlace abierto *mientras* el job corre muestre los productos
+apareciendo. Medido ([Resultados de F2](../referencia/f2-resultados.md#publicacion-durante-el-job-2026-11-05)).
+Lo que no cambia: el schema, el contrato del pipeline y `l3proc` (sin tocar el repo ajeno).
