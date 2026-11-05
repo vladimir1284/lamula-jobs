@@ -120,3 +120,48 @@ y sin publicar. La publicación en R2 (y en la base que use el pipeline) se hace
 
 Motivo: decisión del dueño. No hay credenciales de R2 para probar y la publicación no cambia lo
 que F1 tiene que demostrar, que es la cadena ORPG → producto → COG.
+
+## D13 — Dos roles de servicio y contraseñas de job derivadas, no guardadas (2026-11-04)
+
+`jobs-api` y el runner no se conectan como el mismo rol. **`jobs_api`** es dueño de los schemas de
+job, crea y borra schemas y roles, y lo ve todo en `control`. **`jobs_runner`** solo puede leer
+`jobs` y `job_inputs` y actualizar siete columnas de progreso (`state`, `claimed_*`, `heartbeat_at`,
+`attempts`, `error`, `started_at`, `finished_at`): no ve los tokens de acceso, no puede cambiar la
+cuota ni la caducidad de nadie y no puede crear schemas ni roles
+(`tests/test_cola.py::test_runner_no_puede_tocar_cuotas_ni_tokens_ni_crear_schemas`).
+
+Las contraseñas de los dos roles de cada job (`job_<id>` escribe, `job_<id>_ro` lee) se **derivan**
+con HMAC-SHA256 de una clave del servicio y el id del job. No hay columna de contraseñas que
+filtrar, y quien conoce la clave puede volver a calcularlas. Son dos claves distintas: el runner
+conoce la de escritura y **no** la de lectura (lo que el viewer usa), y el token de resultado se
+deriva de una tercera.
+
+Motivo: un runner comprometido es lo más expuesto del plano demo (ejecuta software con licencia
+ajena sobre ficheros de terceros). Con esto no llega ni a los tokens ni a otros jobs.
+
+Las tablas de cada schema pertenecen a `jobs_api`, no al rol del job: un job no puede alterar la
+forma de su schema (`ALTER TABLE` y `CREATE TABLE` dan `InsufficientPrivilege` en las pruebas).
+
+## D14 — Dos jobs vivos no pueden cubrir el mismo radar en las mismas horas (2026-11-04)
+
+Mientras el pipeline no admita `R2_KEY_PREFIX`, el alta de un job se rechaza (HTTP 409) si otro job
+vivo (`creating`, `queued`, `claimed`, `ingesting`, `ready`) del mismo radar tiene una ventana
+`[vol_from, vol_to]` que se solapa con la suya.
+
+Motivo: el pipeline escribe cada COG en `{site}/{producto}/{aaaa}/{mm}/{dd}/{site}_{producto}_{ts}.tif`,
+sin nada del job. Dos jobs del mismo radar y la misma hora escribirían **el mismo objeto**, y el
+borrado de uno (que se hace por las claves de su propio schema) se llevaría el del otro. Medido: no
+se pisan en la base —cada job tiene su schema— pero sí en el bucket. Rechazar el alta es peor para
+el usuario que arreglarlo, y es mejor que corromper en silencio.
+
+**Se retira** cuando el pipeline acepte `R2_KEY_PREFIX` (cambio pequeño y aditivo, ya propuesto en
+[Aislamiento de datos](../arquitectura/aislamiento-datos.md)) o si el dueño decide un bucket por
+job. El efecto práctico hasta entonces: **dos prospectos no pueden mirar a la vez el mismo huracán
+en el mismo radar con jobs propios**; F4 (casos preparados, jobs compartidos) lo resuelve de otra manera.
+
+## D15 — Un alta pasa por `creating` antes de ser visible para los runners (2026-11-04)
+
+La fila del job se inserta en `creating`; solo cuando el schema y los roles existen, pasa a `queued`.
+Un alta que muere entre las dos cosas queda en `creating` y el barrido la marca `failed` pasados 10
+minutos. Motivo: sin ese estado, un runner podía reclamar el job milisegundos antes de que existiera
+su schema. Las cuotas cuentan `creating` como activo.

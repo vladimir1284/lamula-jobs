@@ -33,6 +33,8 @@ def basedatos():
     nombre = "jobs_test_" + sec.token_hex(4)
     with psycopg.connect(dsn("postgres"), autocommit=True) as c:
         c.execute(f'CREATE DATABASE "{nombre}"')
+    with psycopg.connect(dsn("postgres"), autocommit=True) as c:
+        previos = {r[0] for r in c.execute("SELECT rolname FROM pg_roles WHERE rolname LIKE 'job\\_%'").fetchall()}
     with psycopg.connect(dsn(nombre), autocommit=True, row_factory=dict_row) as c:
         migrar(c)
         c.execute("ALTER ROLE jobs_api LOGIN PASSWORD 'api-pw'")
@@ -41,10 +43,12 @@ def basedatos():
     with psycopg.connect(dsn("postgres"), autocommit=True) as c:
         c.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s", (nombre,))
         c.execute(f'DROP DATABASE "{nombre}"')
-        # Los roles son del clúster, no de la base: DROP DATABASE no se los lleva. Los de job de esta
-        # sesión se borran aquí; los de servicio (jobs_api, jobs_runner) se quedan.
+        # Los roles son del clúster, no de la base: DROP DATABASE no se los lleva. Se borran solo los de
+        # job que NO existían al empezar la sesión (los de otras bases del mismo Postgres, p. ej. los de
+        # la prueba de extremo a extremo, no son nuestros). Los de servicio se quedan.
         for (r,) in c.execute("SELECT rolname FROM pg_roles WHERE rolname LIKE 'job\\_%'").fetchall():
-            c.execute(f'DROP ROLE "{r}"')
+            if r not in previos:
+                c.execute(f'DROP ROLE "{r}"')
 
 
 @pytest.fixture

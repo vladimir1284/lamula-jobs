@@ -60,6 +60,7 @@ nav:
       - Fases: implementacion/fases.md
       - F0 en una máquina con Docker: implementacion/f0-ejecucion.md
       - Plan de trabajo autónomo: implementacion/plan-autonomo.md
+      - F2 en una máquina con Docker: implementacion/f2-ejecucion.md
   - Referencia:
       - Hechos verificados del ORPG: referencia/orpg-hechos.md
       - Velocidad de reproducción: referencia/velocidad-reproduccion.md
@@ -68,4 +69,5 @@ nav:
       - Equivalencia y recursos: referencia/equivalencia-y-recursos.md
       - Catálogo verificado: referencia/catalogo-verificado.md
       - Contrato con el pipeline: referencia/contrato-pipeline.md
+      - Resultados de F2: referencia/f2-resultados.md
       - Licencia del CODE: referencia/licencia.md

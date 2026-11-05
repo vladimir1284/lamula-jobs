@@ -6,6 +6,7 @@ from lamula_jobs import queue, service, sweep, tenancy
 
 def test_cancelado_a_mitad_no_deja_nada_y_el_vecino_sigue_intacto(api_conn, runner_conn, admin, token, almacen):
     tok = queue.validar_token(admin, token["token"])
+    base = sweep.huerfanos(admin)  # los roles son del clúster: puede haber ajenos (otras bases del mismo Postgres)
     mk = lambda icao: service.crear_job(api_conn, tok, icao=icao, secrets=SECRETS, migraciones=MIGRACIONES,
                                         entradas=[queue.Entrada(k, 5) for k in claves(icao, dia_unico(), 2)])
     a, b = mk("KAMX"), mk("KHGX")
@@ -39,7 +40,7 @@ def test_cancelado_a_mitad_no_deja_nada_y_el_vecino_sigue_intacto(api_conn, runn
     assert not [h for h in sweep.huerfanos(admin)["schemas"] if a["id"] in h]
     queue.cancelar(api_conn, b["id"])
     sweep.barrer(api_conn, almacen, migraciones=MIGRACIONES, rw=SECRETS.rw, ro=SECRETS.ro)
-    assert sweep.huerfanos(admin) == {"schemas": [], "roles": []}
+    assert sweep.huerfanos(admin) == base
 
 
 def test_barrido_es_idempotente_y_caduca(api_conn, admin, token, almacen):
@@ -60,8 +61,9 @@ def test_alta_incompleta_no_deja_job_ni_schema(api_conn, admin, token, tmp_path)
     (mala / "0001.sql").write_text("SELECT * FROM no_existe;")
     import pytest, psycopg
     antes = admin.execute("SELECT count(*) AS n FROM control.jobs").fetchone()["n"]
+    base = sweep.huerfanos(admin)
     with pytest.raises(psycopg.errors.UndefinedTable):
         service.crear_job(api_conn, tok, icao="KAMX", secrets=SECRETS, migraciones=mala,
                           entradas=[queue.Entrada(k) for k in claves("KAMX", dia_unico(), 1)])
     assert admin.execute("SELECT count(*) AS n FROM control.jobs").fetchone()["n"] == antes
-    assert sweep.huerfanos(admin) == {"schemas": [], "roles": []}
+    assert sweep.huerfanos(admin) == base
