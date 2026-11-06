@@ -85,7 +85,16 @@ rayos ocultas en jobs históricos.
 **Puerta:** un enlace abierto **mientras** el job corre muestra los productos apareciendo.
 
 **Estado (2026-11-05):** el requisito previo, publicar por lotes durante el job, está hecho (D17): el primer
-producto aparece a los 80 s y las filas crecen en 8 pasos. Falta el lado del viewer.
+producto aparece a los 80 s y las filas crecen en 8 pasos.
+
+**Viewer (2026-11-05), rama `f3-demo-jobs` de `lamula-webviewer`, sin commitear ni fusionar:** credenciales por token
+(cookie `lamula_job` → `GET /v1/results/<token>` de `jobs-api`), pantalla `/j/<token>` que sondea el estado y abre
+el visor al llegar el primer lote, desalojo LRU de pools (`MAX_POOLS=20`), viento y rayos ocultos con
+`NUXT_PUBLIC_DEMO_JOB=true` (y 404 en `/api/wind|lightning/times` con `NUXT_JOBS_API_URL`). La línea de
+tiempo cae en la ventana del job porque `last_seen_at = vol_to` (`worker.py`). 713 pruebas unitarias, lint y
+typecheck pasan. **Puerta pasada en desarrollo (2026-11-05):** enlace abierto con un job real corriendo y el visor
+avanzó solo al segundo volumen, sin recargar ([Resultados](../referencia/f2-resultados.md#viewer-demo-con-un-job-real-2026-11-05)).
+Falta R2/Swarm reales y el viewer de producción.
 
 ## F4 — Selector y casos preparados
 

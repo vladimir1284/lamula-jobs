@@ -63,6 +63,10 @@ Opciones identificadas, para cuando haya respuesta:
   NWS, ni usar su nombre o identificadores. Esto toca la interfaz del viewer demo y es trabajo
   de F3 pase lo que pase con lo demás.
 
+  **Decidido el 2026-11-05: se pospone a F4.** La pantalla de estado (`/j/<token>`) ya lleva el texto; el
+  visor, no. Hasta F4 nadie ajeno al equipo abre un enlace, así que el riesgo es nulo; **debe estar
+  puesto antes de que entre el primer tercero** (puerta de F4).
+
 Nada de esto bloquea F0 ni F1, que corren en nuestra máquina y para nuestro desarrollo. Bloquea
 F4, que es cuando entra el primer tercero.
 

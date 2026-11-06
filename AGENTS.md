@@ -26,6 +26,11 @@ y qué parte falta. Descargar volúmenes y escribir la playlist es `f0/catalogo.
 `docs/implementacion/f0-ejecucion.md`**: tiene los comandos literales en orden, las puertas de
 cada paso y dónde se anota cada resultado. F0 no necesita Postgres, ni R2, ni el Swarm.
 
+> **Actualización 2026-11-05:** lo de abajo describe el punto de F0. F1 y F2 están cerradas y F3 está en curso:
+> el runner ya publica por lotes (D17) y el viewer demo está en la rama `f3-demo-jobs` de `lamula-webviewer`.
+> El estado vigente está en `docs/implementacion/fases.md` y `docs/alcance/pendientes.md`. La frase "no se ha
+> escrito código del servicio" ya no es cierta.
+
 ## Estado al 2026-11-02 — por dónde seguir
 
 Esta sección es el punto de partida de la próxima sesión. **Todo lo que hace falta saber está en

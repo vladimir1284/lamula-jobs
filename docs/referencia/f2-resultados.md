@@ -111,3 +111,37 @@ fallido); los ~155 s entre el último raster y `ready` son la espera de reposo (
 - **El bucket R2 y la base `lamula_demo` de verdad no existen**: hacen falta credenciales del dueño.
 - **El cron del barrido no está programado**: `jobs-admin sweep` existe y está probado, falta quien lo llame.
 - **Cuota en bytes (`max_bytes`)**: la columna existe, está validada en el alta y sin valor en ningún nivel.
+
+## Viewer demo con un job real (2026-11-05)
+
+Puerta de F3 probada en el entorno de desarrollo (Postgres propio, moto en lugar de R2, `nuxt dev` con
+`NUXT_JOBS_API_URL` y `NUXT_PUBLIC_DEMO_JOB=true`), con `jobs/e2e/viewer_f3.mjs` y Chromium. Job KAMX de
+dos volúmenes (Irma, 18:04 y 18:10 UTC), lanzado por la API. El enlace `/j/<token>` se abre con el job ya
+en cola y la **sesión se deja abierta, sin recargar**, hasta que el job termina.
+
+| Medida | Resultado |
+|---|---|
+| Pantalla de estado | «En cola» a los 10 s, redirección al visor a los **12 s** de abrir el enlace (primer lote ya publicado) |
+| Primer producto en el visor | N0G (154), a `/AMX/154/20170910T180401`: la ventana del job, no «ahora» |
+| Segundo volumen, **sin recargar** | el visor pasa solo de 12:04:01 a 12:10:50 (GMT-6) a los 253 s; frames del producto: 1 → 2 |
+| Job terminado | `ready`, 2 frames, **0 respuestas HTTP ≥ 400** en toda la sesión |
+| Pastillas de viento, rayos y feedback | 0, con el menú cerrado y abierto (prueba de componente) |
+| Enlace nuevo con el job ya `ready` | redirige a los 2 s, raster cargado a los 9 s |
+| Coordenadas de `radars` | `AMX 25.611 -80.413`, `last_seen_at = 2017-09-10T18:10:50` (= `vol_to`) |
+| Token inventado | 404, sin cookie |
+
+**Defectos hallados por la prueba, corregidos en el viewer:**
+
+1. La fila de rayos del panel seguía visible con `demo` (la encontró una prueba de componente).
+2. El viewer pedía `/api/feedback/mine` (503): no hay base de feedback en el plano demo.
+3. **El primer lote de un job no trae todos los productos a la vez**: con el primer lote solo había N0G
+   (154) y `/j/<token>` redirigía a N0B (153). El visor pedía «ahora», recibía 404 y no mostraba
+   línea de tiempo. Ahora `/api/job/<token>` devuelve el primer producto raster con datos en la
+   ventana del job (N0B si está) y la página no redirige hasta que hay uno. Este caso solo salió al
+   repetir la prueba: la primera pasada tuvo la suerte de que N0B llegara en el primer lote.
+
+**Aún no probado:** R2 y el Swarm reales; el viewer de producción (`nuxt build`) en lugar de `nuxt dev`;
+dos sesiones de viewer simultáneas sobre jobs distintos (el desalojo de pools se probó solo con una
+prueba unitaria); un job que falla a mitad con el enlace abierto. Pendientes del viewer: la etiqueta
+«EN VIVO» y «hace 9 años» salen también en un job histórico; `/api/health` exige cookie; el etiquetado
+«no es oficial del NWS» está en la pantalla de estado pero no en el visor.
