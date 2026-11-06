@@ -15,7 +15,7 @@ import psycopg
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from . import queue, service, tenancy
+from . import catalogo, queue, service, tenancy
 from .config import Secrets, env
 from .db import conectar
 from .ids import token_resultado
@@ -43,7 +43,7 @@ def _publico(j: dict, secrets: Secrets) -> dict:
 
 
 def create_app(dsn: str | None = None, secrets: Secrets | None = None, migraciones: Path | None = None,
-               internal_key: str | None = None) -> FastAPI:
+               internal_key: str | None = None, s3_catalogo=None) -> FastAPI:
     dsn = dsn or env("JOBS_API_DSN")
     secrets = secrets or Secrets.from_env()
     migraciones = migraciones or Path(env("PIPELINE_MIGRATIONS"))
@@ -66,6 +66,40 @@ def create_app(dsn: str | None = None, secrets: Secrets | None = None, migracion
         if t is None:
             raise HTTPException(401, "token no válido, caducado o revocado")
         return t
+
+    def _s3():
+        nonlocal s3_catalogo
+        if s3_catalogo is None:
+            s3_catalogo = catalogo.anonimo()
+        return s3_catalogo
+
+    def _cat(fn, *a):
+        try:
+            return fn(_s3(), *a)
+        except catalogo.CatalogoError as exc:
+            raise HTTPException(422, str(exc))
+        except Exception:
+            raise HTTPException(502, "el catálogo público no responde")
+
+    @app.get("/v1/catalog/sites")
+    def cat_sitios(day: str, tok: dict = Depends(token)) -> dict:
+        return {"day": day, "sites": _cat(catalogo.sitios, day)}
+
+    @app.get("/v1/catalog/volumes")
+    def cat_volumenes(site: str, day: str, tok: dict = Depends(token)) -> dict:
+        vs = _cat(catalogo.volumenes, site, day)
+        return {"site": site.upper(), "day": day, "volumes": [{"key": v.key, "bytes": v.bytes, "time": v.hora.isoformat()} for v in vs],
+                "estimate": catalogo.estimar(len(vs), sum(v.bytes for v in vs))}
+
+    @app.get("/v1/catalog/cases")
+    def cat_casos(tok: dict = Depends(token)) -> list[dict]:
+        return [{"id": k, "titulo": t, "icao": i, "desde": d, "hasta": h} for k, (t, i, d, h) in catalogo.CASOS.items()]
+
+    @app.get("/v1/catalog/cases/{nombre}")
+    def cat_caso(nombre: str, tok: dict = Depends(token)) -> dict:
+        if nombre not in catalogo.CASOS:
+            raise HTTPException(404, "no existe")
+        return _cat(catalogo.caso, nombre)
 
     @app.get("/healthz")
     def healthz() -> dict:

@@ -93,3 +93,35 @@ def test_resultado_solo_servidor_a_servidor_y_da_credenciales_de_solo_lectura(cl
 def test_sin_clave_interna_configurada_el_endpoint_de_resultados_esta_cerrado(basedatos, token):
     c = TestClient(create_app(dsn(basedatos, "jobs_api", "api-pw"), SECRETS, MIGRACIONES, internal_key=""))
     assert c.get("/v1/results/lmr_x", headers={"X-Internal-Key": ""}).status_code == 401
+
+
+@pytest.fixture
+def cliente_cat(basedatos):
+    import boto3
+    from moto import mock_aws
+    with mock_aws():
+        s3 = boto3.client("s3", region_name="us-east-1")
+        s3.create_bucket(Bucket="unidata-nexrad-level2")
+        for k in ["2017/09/10/KAMX/KAMX20170910_170000_V06", "2017/09/10/KAMX/KAMX20170910_170600_V06",
+                  "2017/09/10/KAMX/KAMX20170910_170600_MDM", "2017/09/10/KAMX/KAMX20170910_190000_V06",
+                  "2017/09/10/KHGX/KHGX20170910_000000_V06"]:
+            s3.put_object(Bucket="unidata-nexrad-level2", Key=k, Body=b"x" * 10)
+        app = create_app(dsn(basedatos, "jobs_api", "api-pw"), SECRETS, MIGRACIONES, internal_key="k", s3_catalogo=s3)
+        yield TestClient(app)
+
+
+def test_catalogo(cliente_cat, token):
+    h = H(token["token"])
+    assert cliente_cat.get("/v1/catalog/sites?day=2017-09-10").status_code == 401
+    assert cliente_cat.get("/v1/catalog/sites?day=2017-09-10", headers=h).json()["sites"] == ["KAMX", "KHGX"]
+    v = cliente_cat.get("/v1/catalog/volumes?site=kamx&day=2017-09-10", headers=h).json()
+    assert [x["time"][11:19] for x in v["volumes"]] == ["17:00:00", "17:06:00", "19:00:00"]  # sin el MDM
+    assert v["estimate"]["n_volumes"] == 3 and v["estimate"]["minutos"] == 20
+    assert cliente_cat.get("/v1/catalog/volumes?site=KAMX&day=2017-09-11", headers=h).json()["volumes"] == []
+    assert cliente_cat.get("/v1/catalog/volumes?site=KAMX&day=nope", headers=h).status_code == 422
+    assert cliente_cat.get("/v1/catalog/volumes?site=../x&day=2017-09-10", headers=h).status_code == 422
+    assert cliente_cat.get("/v1/catalog/sites?day=2999-01-01", headers=h).status_code == 422
+    assert {c["id"] for c in cliente_cat.get("/v1/catalog/cases", headers=h).json()} == {"irma", "harvey", "michael", "ian", "milton"}
+    irma = cliente_cat.get("/v1/catalog/cases/irma", headers=h).json()
+    assert [x["time"][11:16] for x in irma["volumes"]] == ["17:00", "17:06"]  # la ventana excluye las 19:00
+    assert cliente_cat.get("/v1/catalog/cases/zzz", headers=h).status_code == 404
