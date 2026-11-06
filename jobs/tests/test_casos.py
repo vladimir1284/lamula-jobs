@@ -91,3 +91,21 @@ def test_el_worker_publica_cada_job_en_su_destino():
     assert (d.pg_db, d.pg_user, d.r2_bucket) == ("demo", tenancy.rol_rw(jid), "demo-raster")
     with pytest.raises(JobFallido, match="base de casos"):
         _cfg(None).destino_de({"id": jid, "destino": "casos"})
+
+
+def test_casos_publicos_solo_los_ya_procesados(api_conn, admin, fuente, basedatos):
+    from fastapi.testclient import TestClient
+    from conftest import dsn
+    from lamula_jobs.api import create_app
+    cli = TestClient(create_app(dsn(basedatos, "jobs_api", "api-pw"), SECRETS, MIGRACIONES, internal_key="k", s3_catalogo=fuente))
+    j = lanzar(api_conn, fuente)
+    try:
+        assert cli.get("/v1/public/cases").json() == []  # en cola: todavía no se enseña
+        admin.execute("UPDATE control.jobs SET state='ready' WHERE id=%s", (j["id"],))
+        r = cli.get("/v1/public/cases")  # sin cabecera de token
+        assert r.status_code == 200
+        (c,) = r.json()
+        assert (c["id"], c["titulo"], c["icao"], c["n_volumes"]) == ("irma", "Irma", "KAMX", 2)
+        assert c["desde"].startswith("2017-09-10T17:00") and "result_token" not in c
+    finally:
+        admin.execute("UPDATE control.jobs SET state='failed' WHERE id=%s", (j["id"],))

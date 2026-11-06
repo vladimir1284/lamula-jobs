@@ -101,6 +101,15 @@ def create_app(dsn: str | None = None, secrets: Secrets | None = None, migracion
             raise HTTPException(404, "no existe")
         return _cat(catalogo.caso, nombre)
 
+    @app.get("/v1/public/cases")
+    def casos_listos() -> list[dict]:
+        """Casos preparados ya procesados (D19). Sin token: son públicos y de solo lectura. Solo los `ready`."""
+        with _conn() as c:
+            filas = c.execute("SELECT caso, vol_from, vol_to, n_volumes FROM control.jobs WHERE destino = 'casos' AND state = 'ready'").fetchall()
+        return [{"id": f["caso"], "titulo": catalogo.CASOS[f["caso"]][0], "icao": catalogo.CASOS[f["caso"]][1],
+                 "desde": f["vol_from"].isoformat(), "hasta": f["vol_to"].isoformat(), "n_volumes": f["n_volumes"]}
+                for f in filas if f["caso"] in catalogo.CASOS]
+
     @app.get("/healthz")
     def healthz() -> dict:
         with _conn() as c:
