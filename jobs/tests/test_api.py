@@ -125,3 +125,17 @@ def test_catalogo(cliente_cat, token):
     irma = cliente_cat.get("/v1/catalog/cases/irma", headers=h).json()
     assert [x["time"][11:16] for x in irma["volumes"]] == ["17:00", "17:06"]  # la ventana excluye las 19:00
     assert cliente_cat.get("/v1/catalog/cases/zzz", headers=h).status_code == 404
+
+
+def test_alta_desde_la_fuente_publica(cliente_cat, token):
+    h = H(token["token"])
+    ok = ["2017/09/10/KAMX/KAMX20170910_170000_V06", "2017/09/10/KAMX/KAMX20170910_170600_V06"]
+    r = cliente_cat.post("/v1/jobs", json={"icao": "KAMX", "inputs": [{"source_key": k} for k in ok]}, headers=h)
+    assert r.status_code == 201, r.text
+    assert r.json()["n_volumes"] == 2
+    f = lambda **kw: cliente_cat.post("/v1/jobs", json=kw, headers=h).status_code
+    assert f(icao="KAMX", inputs=[{"source_key": "2017/09/10/KAMX/KAMX20170910_999999_V06"}]) == 422  # no existe
+    assert f(icao="KHGX", inputs=[{"source_key": ok[0]}]) == 422                                       # de otro radar
+    assert f(icao="KAMX", inputs=[{"source_key": "../../x"}]) == 422
+    assert f(icao="KAMX", inputs=[{"source_key": ok[0], "staging_key": "a"}]) == 422                   # ambas
+    assert f(icao="KAMX", inputs=[{"source_key": ok[0]}, {"staging_key": "s/KAMX20170910_190000_V06"}]) == 422  # mezcla

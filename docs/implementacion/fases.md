@@ -101,6 +101,9 @@ Falta R2/Swarm reales y el viewer de producción.
 Catálogo de sitios y días desde `jobs-api`, selección de rango, estimación de duración, menú de
 huracanes conocidos, página pública con el formulario de solicitud y Turnstile.
 
+**Estado (2026-11-06):** hecho el catálogo de `jobs-api` (`/v1/catalog/*`: sitios, volúmenes, casos) y el alta desde la fuente
+pública (D18). Falta el selector del viewer, la página con formulario y Turnstile, y el etiquetado "no oficial" en el visor.
+
 **Puerta:** alguien ajeno al equipo completa el camino entero sin ayuda: pide acceso, recibe
 token, lanza un caso preparado y abre el resultado.
 

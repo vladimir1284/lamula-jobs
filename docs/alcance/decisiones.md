@@ -196,3 +196,15 @@ fallar el job; un truncado de verdad nunca sale de `tmp` y lo encuentra `revisar
 Motivo: la puerta de F3 es que un enlace abierto *mientras* el job corre muestre los productos
 apareciendo. Medido ([Resultados de F2](../referencia/f2-resultados.md#publicacion-durante-el-job-2026-11-05)).
 Lo que no cambia: el schema, el contrato del pipeline y `l3proc` (sin tocar el repo ajeno).
+
+## D18 — El worker baja de la fuente pública, sin pasar por staging (2026-11-06)
+
+`POST /v1/jobs` acepta entradas con `source_key` (clave del catálogo `unidata-nexrad-level2`) en vez de
+`staging_key`; no se mezclan ambas. La API valida contra el catálogo (existe, `_V06`, es del radar) y
+fija los tamaños reales con un listado por día, sin copiar nada. El **worker** baja cada volumen directo
+a su directorio de trabajo, con 3 reintentos y comprobación de tamaño; un truncado falla el job.
+
+Se descartó copiar dentro de la petición (280 MB por alta) y un servicio aparte (otro componente que
+operar para una decena de prospectos). No hay estado nuevo ni migración: la descarga ocurre en `claimed`,
+con latido y timeout. Lo de la fuente pública no está en nuestro staging, y el barrido no lo borra.
+La regla «el runner no sabe de dónde vienen los ficheros» se mantiene: es del `runner` interno, no del worker.

@@ -42,7 +42,7 @@ def borrar_recursos(conn: psycopg.Connection, almacen: Almacen, job_id: str, *, 
     claves = tenancy.claves_r2(conn, job_id)
     out = {"cogs": almacen.borrar(almacen.bucket, claves) if claves else 0, "staging": 0}
     if staging:
-        ks = [r["staging_key"] for r in queue.entradas_de(conn, job_id)]
+        ks = [r["staging_key"] for r in queue.entradas_de(conn, job_id) if not r["source_key"]]  # lo de la fuente pública no está en nuestro staging
         out["staging"] = almacen.borrar(almacen.staging_bucket, ks) if ks else 0
     tenancy.borrar(conn, job_id)
     conn.execute("UPDATE control.jobs SET resources_dropped_at = now() WHERE id = %s", (job_id,))

@@ -13,7 +13,7 @@ from datetime import date, datetime, timezone
 BUCKET = "unidata-nexrad-level2"
 # Medido en F0/F1: 12 volúmenes con `play_a2 -m -d` ≈ 80 min de nodo (docs/referencia/velocidad-reproduccion.md).
 MIN_POR_VOLUMEN = 80 / 12
-_CLAVE = re.compile(r"^(\d{4})/(\d{2})/(\d{2})/([A-Z0-9]{4})/\4(\d{8})_(\d{6})_V06$")
+CLAVE = re.compile(r"^(\d{4})/(\d{2})/(\d{2})/([A-Z0-9]{4})/\4(\d{8})_(\d{6})_V06$")
 _ICAO = re.compile(r"^[A-Z0-9]{4}$")
 
 # Ventanas medidas, no horas de recalada (docs/referencia/catalogo-verificado.md; f0/catalogo.py CASES).
@@ -72,7 +72,7 @@ def volumenes(s3, icao: str, dia: str, bucket: str = BUCKET) -> list[Volumen]:
     out: list[Volumen] = []
     for pag in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=pref):
         for o in pag.get("Contents", []):
-            m = _CLAVE.match(o["Key"])
+            m = CLAVE.match(o["Key"])
             if m:
                 out.append(Volumen(o["Key"], o["Size"], datetime.strptime(m[5] + m[6], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)))
     return sorted(out, key=lambda v: v.hora)

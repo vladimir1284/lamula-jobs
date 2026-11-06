@@ -22,7 +22,7 @@ from .ids import token_resultado
 
 
 class EntradaIn(BaseModel):
-    staging_key: str = Field(min_length=1, max_length=512)
+    staging_key: str | None = Field(default=None, min_length=1, max_length=512)
     bytes: int = Field(default=0, ge=0)
     source_key: str | None = None
 
@@ -107,12 +107,38 @@ def create_app(dsn: str | None = None, secrets: Secrets | None = None, migracion
             c.execute("SELECT 1")
         return {"ok": True}
 
+    def _entradas_fuente(icao: str, claves: list[str]) -> list[queue.Entrada]:
+        """Valida contra el catálogo público (existe, es V06, es del radar) y fija los tamaños reales."""
+        try:
+            dias = sorted({"-".join(k.split("/")[:3]) for k in claves})
+            if not all(catalogo.CLAVE.match(k) and k.split("/")[3] == icao for k in claves):
+                raise HTTPException(422, f"las claves tienen que ser volúmenes _V06 del catálogo público de {icao}")
+            tam = {v.key: v.bytes for d in dias for v in catalogo.volumenes(_s3(), icao, d)}
+        except catalogo.CatalogoError as exc:
+            raise HTTPException(422, str(exc))
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(502, "el catálogo público no responde")
+        falta = [k for k in claves if k not in tam]
+        if falta:
+            raise HTTPException(422, f"no existe en el catálogo público: {falta[0]}")
+        return [queue.Entrada(k, tam[k], k) for k in claves]
+
     @app.post("/v1/jobs", status_code=201)
     def alta(body: JobIn, tok: dict = Depends(token)) -> dict:
-        ents = [queue.Entrada(e.staging_key, e.bytes, e.source_key) for e in body.inputs]
+        if any((e.staging_key is None) == (e.source_key is None) for e in body.inputs):
+            raise HTTPException(422, "cada entrada lleva staging_key o source_key, una de las dos")
+        icao = body.icao.upper()
+        if any(e.source_key for e in body.inputs):
+            if not all(e.source_key for e in body.inputs):
+                raise HTTPException(422, "no se mezclan entradas de staging y de la fuente pública")
+            ents = _entradas_fuente(icao, [e.source_key for e in body.inputs])
+        else:
+            ents = [queue.Entrada(e.staging_key, e.bytes, e.source_key) for e in body.inputs]
         with _conn() as c:
             try:
-                j = service.crear_job(c, tok, icao=body.icao.upper(), entradas=ents, secrets=secrets, migraciones=migraciones)
+                j = service.crear_job(c, tok, icao=icao, entradas=ents, secrets=secrets, migraciones=migraciones)
             except queue.EntradaInvalida as exc:
                 raise HTTPException(422, str(exc))
             except queue.CuotaExcedida as exc:

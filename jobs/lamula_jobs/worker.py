@@ -60,6 +60,8 @@ class Cfg:
     l3proc_cmd: tuple[str, ...] = ("l3proc",)
     change_radar_dat: Path = Path.home() / "tools/cfg/change_radar.dat"
     nombre: str = ""
+    s3_fuente: object = None         # cliente anónimo del catálogo público; None = el real
+    fuente_bucket: str = ""
 
     @classmethod
     def from_env(cls) -> "Cfg":
@@ -93,10 +95,31 @@ def verificar_coordenadas(rw: psycopg.Connection, icao: str, esperadas: tuple[fl
         raise JobFallido(f"coordenadas {f['lat']},{f['lon']} y se esperaban {esperadas}: change_radar no surtió efecto")
 
 
+def _bajar_fuente(cfg: Cfg, e: dict, dest: Path, intentos: int = 3) -> None:
+    """Baja un volumen del catálogo público con reintentos y comprueba el tamaño que dio el alta."""
+    from .catalogo import BUCKET, anonimo
+    s3 = cfg.s3_fuente or anonimo()
+    ultimo: Exception | None = None
+    for i in range(intentos):
+        try:
+            s3.download_file(cfg.fuente_bucket or BUCKET, e["source_key"], str(dest))
+            if e["bytes"] and dest.stat().st_size != e["bytes"]:
+                raise OSError(f"tamaño {dest.stat().st_size} y se esperaban {e['bytes']}")
+            return
+        except Exception as exc:  # noqa: BLE001
+            ultimo = exc
+            dest.unlink(missing_ok=True)
+            time.sleep(min(2 ** i, 5))
+    raise JobFallido(f"no se pudo bajar {e['source_key']} de la fuente pública: {ultimo}") from ultimo
+
+
 def bajar_entradas(cfg: Cfg, entradas: list[dict], destino: Path) -> None:
     destino.mkdir(parents=True, exist_ok=True)
     for e in entradas:
         nombre = e["staging_key"].rsplit("/", 1)[-1]
+        if e.get("source_key"):  # de la fuente pública (F4): se baja directo, sin pasar por staging
+            _bajar_fuente(cfg, e, destino / nombre)
+            continue
         try:
             cfg.s3.download_file(cfg.staging_bucket, e["staging_key"], str(destino / nombre))
         except Exception as exc:  # noqa: BLE001 — cualquier fallo de red o de clave es «el job no tiene sus entradas»

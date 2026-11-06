@@ -105,3 +105,19 @@ def test_publicador_falla_con_fallidos_y_respeta_la_cancelacion(tmp_path):
     cancelado = worker.Publicador(prod, tmp_path, lambda lote: (1, 0), lambda: None, cancelado=lambda: True)
     with pytest.raises(worker.JobCancelado):
         cancelado.paso()
+
+
+def test_bajar_de_la_fuente_publica_comprueba_tamano(tmp_path, monkeypatch):
+    monkeypatch.setattr(worker.time, "sleep", lambda s: None)
+
+    class S3:
+        def __init__(self, n): self.n = n
+        def download_file(self, b, k, dest): open(dest, "wb").write(b"x" * self.n)
+
+    cfg = type("C", (), {"s3_fuente": S3(10), "fuente_bucket": "b", "s3": None, "staging_bucket": "s"})()
+    worker.bajar_entradas(cfg, [{"staging_key": "2017/a/KAMX20170910_170000_V06", "source_key": "2017/a/KAMX20170910_170000_V06", "bytes": 10}], tmp_path)
+    assert (tmp_path / "KAMX20170910_170000_V06").stat().st_size == 10
+    cfg.s3_fuente = S3(7)  # truncado: tiene que fallar limpio, sin dejar el fichero
+    with pytest.raises(worker.JobFallido, match="tamaño 7"):
+        worker.bajar_entradas(cfg, [{"staging_key": "k/KAMX20170910_170600_V06", "source_key": "k/KAMX20170910_170600_V06", "bytes": 10}], tmp_path)
+    assert not (tmp_path / "KAMX20170910_170600_V06").exists()
