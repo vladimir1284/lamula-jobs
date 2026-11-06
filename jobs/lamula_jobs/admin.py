@@ -54,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     h.add_argument("--latido-max", type=int, default=sweep.LATIDO_AVISO_S, help=f"segundos sin latido de un job en marcha ({sweep.LATIDO_AVISO_S})")
     x = sub.add_parser("expire", help="caduca a mano un job ready o failed y borra ya su schema, roles y objetos")
     x.add_argument("job_id")
+    k = sub.add_parser("caso", help="procesa un caso preparado, una vez: sin caducidad, en la base y el bucket de casos (D19)")
+    k.add_argument("nombre", help="id del caso (GET /v1/catalog/cases)")
     sub.add_parser("orphans", help="schemas y roles job_* sin job vigente; sale con 1 si hay alguno")
     args = ap.parse_args(argv)
     conn = conectar(env("JOBS_ADMIN_DSN"))
@@ -91,6 +93,25 @@ def main(argv: list[str] | None = None) -> int:
         if not r["caducado"]:
             print(f"el job está {r['state']}: solo se caducan los ready o failed (uno en marcha se cancela antes)", file=sys.stderr)
             return 1
+    elif args.orden == "caso":
+        from . import catalogo, queue, service
+        try:
+            j = service.lanzar_caso(conn, args.nombre, catalogo.anonimo(), secrets=Secrets.from_env(), migraciones=Path(env("PIPELINE_MIGRATIONS")))
+        except KeyError:
+            print(f"no existe el caso {args.nombre}; los hay: {', '.join(catalogo.CASOS)}", file=sys.stderr)
+            return 1
+        except queue.Solapado:
+            print(f"el caso {args.nombre} ya tiene un job vivo: no se procesa dos veces", file=sys.stderr)
+            return 1
+        except (queue.EntradaInvalida, catalogo.CatalogoError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        except Exception as exc:  # noqa: BLE001 — el índice único de casos vivos es lo que dice que ya existe
+            if "jobs_un_caso_vivo" in str(exc):
+                print(f"el caso {args.nombre} ya tiene un job vivo: no se procesa dos veces", file=sys.stderr)
+                return 1
+            raise
+        print(json.dumps({"id": j["id"], "state": j["state"], "caso": j["caso"], "n_volumes": j["n_volumes"]}, default=str))
     elif args.orden == "orphans":
         h = sweep.huerfanos(conn)
         print(json.dumps(h))

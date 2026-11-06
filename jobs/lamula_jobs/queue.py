@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import psycopg
 
@@ -56,8 +56,12 @@ def validar_token(conn: psycopg.Connection, token: str) -> dict | None:
         (sha256(token),)).fetchone()
 
 
-def crear(conn: psycopg.Connection, tok: dict, *, icao: str, entradas: list[Entrada], result_token_de, job_id: str | None = None) -> dict:
+def crear(conn: psycopg.Connection, tok: dict, *, icao: str, entradas: list[Entrada], result_token_de, job_id: str | None = None,
+          caso: str | None = None) -> dict:
     """Valida cuotas y entradas e inserta el job en `creating` (todavía invisible para los runners).
+
+    `caso` (D19) marca un caso preparado: sin caducidad y con los datos en la base y el bucket de casos, así
+    que el solape solo se mira entre casos.
 
     NO crea el schema: lo hace quien llama, y solo entonces `publicar` lo pasa a `queued`.
 
@@ -82,6 +86,7 @@ def crear(conn: psycopg.Connection, tok: dict, *, icao: str, entradas: list[Entr
     if tok["max_bytes"] is not None and total > tok["max_bytes"]:
         raise CuotaExcedida(f"{total} B; el nivel {tok['tier']} permite {tok['max_bytes']}")
     jid = job_id or ulid()
+    destino = "casos" if caso else "demo"
     ahora = datetime.now(timezone.utc)
     with conn.transaction():
         conn.execute("SELECT 1 FROM control.access_tokens WHERE id = %s FOR UPDATE", (tok["id"],))
@@ -94,17 +99,17 @@ def crear(conn: psycopg.Connection, tok: dict, *, icao: str, entradas: list[Entr
         if c["activos"] >= tok["max_jobs_active"]:
             raise CuotaExcedida(f"el nivel {tok['tier']} permite {tok['max_jobs_active']} job(s) activo(s) a la vez")
         choque = conn.execute(
-            """SELECT id FROM control.jobs WHERE icao = %s AND state = ANY(%s)
+            """SELECT id FROM control.jobs WHERE icao = %s AND state = ANY(%s) AND destino = %s
                   AND vol_from <= %s AND vol_to >= %s LIMIT 1""",
-            (icao, list(VIVOS), horas[-1], horas[0])).fetchone()
+            (icao, list(VIVOS), destino, horas[-1], horas[0])).fetchone()
         if choque:
             raise Solapado(f"el job {choque['id']} ya cubre {icao} en esas horas; dos jobs pisarían los mismos objetos del bucket")
         conn.execute(
             """INSERT INTO control.jobs (id, token_id, state, icao, vol_from, vol_to, n_volumes, total_bytes, priority,
-                                         result_token_sha256, expires_at)
-               VALUES (%s,%s,'creating',%s,%s,%s,%s,%s,%s,%s, %s + make_interval(days => %s))""",
+                                         result_token_sha256, expires_at, destino, caso)
+               VALUES (%s,%s,'creating',%s,%s,%s,%s,%s,%s,%s, %s, %s, %s)""",
             (jid, tok["id"], icao, horas[0], horas[-1], len(entradas), total, tok["priority"],
-             sha256(result_token_de(jid)), ahora, tok["retention_days"]))
+             sha256(result_token_de(jid)), None if caso else ahora + timedelta(days=tok["retention_days"]), destino, caso))
         for i, e in enumerate(entradas):
             conn.execute("INSERT INTO control.job_inputs (job_id, seq, staging_key, source_key, bytes) VALUES (%s,%s,%s,%s,%s)",
                          (jid, i, e.staging_key, e.source_key, e.bytes))

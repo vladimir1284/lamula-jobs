@@ -208,3 +208,29 @@ Se descartó copiar dentro de la petición (280 MB por alta) y un servicio apart
 operar para una decena de prospectos). No hay estado nuevo ni migración: la descarga ocurre en `claimed`,
 con latido y timeout. Lo de la fuente pública no está en nuestro staging, y el barrido no lo borra.
 La regla «el runner no sabe de dónde vienen los ficheros» se mantiene: es del `runner` interno, no del worker.
+
+## D19 — Casos preparados: se procesan una vez, en base y bucket aparte (2026-11-06)
+
+Los cinco casos (Irma, Harvey, Michael, Ian, Milton) **no se vuelven a procesar por cada visitante**: se
+procesan una sola vez y quedan al alcance de todos, **sin token**. El token de acceso solo sirve para
+procesar observaciones nuevas. Decidido por el dueño del producto; se eligió base y bucket aparte frente
+a una columna `permanente` en la base de los jobs.
+
+- **Datos aparte.** Base `lamula_casos` y bucket de rasters de casos, con el contrato del pipeline tal cual
+  (sus migraciones, schema `public`, sin schema ni roles por job). Roles fijos: uno de escritura para el
+  worker y uno de solo lectura para el viewer. Un caso que caduque o se borre por error no puede llevarse
+  por delante lo de otro, y el barrido de jobs no llega a esa base.
+- **Control compartido.** La cola sigue en `control.jobs`, con `destino = 'casos'`, `caso = <nombre>` y
+  `expires_at` nulo (migración `0003_casos.sql`). El worker publica en la base y el bucket de `CASOS_PG_*`
+  y `CASOS_R2_BUCKET`; sin esa configuración, un job de casos falla con un mensaje claro.
+- **Quién los lanza.** `jobs-admin caso <nombre>`, con un token de sistema del nivel `casos`. La API pública
+  no ofrece lanzar casos. Solo puede haber un job vivo por caso (D14 y un índice único); uno fallido libera el nombre.
+- **D14 por destino.** El solape solo se mira dentro del mismo destino, porque casos y jobs normales escriben
+  en buckets distintos.
+- **El viewer** necesita una instancia con credenciales estáticas de solo lectura sobre `lamula_casos` y la
+  URL pública del bucket de casos, sin cookie de job. `/demo` enlaza a los casos; pedir token es solo
+  para observaciones propias.
+
+Pendiente de operar, no de código: crear `lamula_casos`, aplicar las migraciones del pipeline, crear sus dos
+roles y el bucket, y poner `CASOS_*` en el worker. Un caso que falle a mitad deja filas parciales en
+`lamula_casos` (el pipeline hace upsert, así que repetirlo converge, pero no se ha probado).

@@ -43,6 +43,17 @@ class JobCancelado(Exception):
 
 
 @dataclass
+class Destino:
+    """Dónde publica un job: base, rol de escritura y bucket de rasters."""
+    pg_host: str
+    pg_port: str
+    pg_db: str
+    pg_user: str
+    pg_password: str
+    r2_bucket: str
+
+
+@dataclass
 class Cfg:
     runner_dsn: str                  # jobs_runner
     pg_host: str
@@ -62,12 +73,24 @@ class Cfg:
     nombre: str = ""
     s3_fuente: object = None         # cliente anónimo del catálogo público; None = el real
     fuente_bucket: str = ""
+    casos: Destino | None = None     # D19: base y bucket de los casos preparados; None = este worker no los procesa
+
+    def destino_de(self, job: dict) -> Destino:
+        """Un job normal publica en su schema (rol propio); un caso, en la base y el bucket de casos (D19)."""
+        if job.get("destino") == "casos":
+            if self.casos is None:
+                raise JobFallido("este worker no tiene configurada la base de casos (CASOS_PG_*, CASOS_R2_BUCKET)")
+            return self.casos
+        jid = job["id"]
+        return Destino(self.pg_host, self.pg_port, self.pg_db, tenancy.rol_rw(jid), tenancy.password(self.secrets.rw, "rw", jid), self.r2_bucket)
 
     @classmethod
     def from_env(cls) -> "Cfg":
         import boto3
         ep, k, s = env("R2_ENDPOINT"), env("R2_ACCESS_KEY_ID"), env("R2_SECRET_ACCESS_KEY")
-        return cls(runner_dsn=env("JOBS_RUNNER_DSN"), pg_host=env("PG_HOST"), pg_port=env("PG_PORT", "5432"), pg_db=env("PG_DB"),
+        casos = Destino(env("CASOS_PG_HOST", env("PG_HOST")), env("CASOS_PG_PORT", env("PG_PORT", "5432")), env("CASOS_PG_DB"),
+                        env("CASOS_PG_USER"), env("CASOS_PG_PASSWORD"), env("CASOS_R2_BUCKET")) if os.environ.get("CASOS_PG_DB") else None
+        return cls(runner_dsn=env("JOBS_RUNNER_DSN"), casos=casos, pg_host=env("PG_HOST"), pg_port=env("PG_PORT", "5432"), pg_db=env("PG_DB"),
                    secrets=Secrets(env("JOBS_RW_SECRET").encode(), b"", b""),  # el runner NO conoce RO ni la de resultado
                    s3=boto3.client("s3", endpoint_url=ep, aws_access_key_id=k, aws_secret_access_key=s, region_name="auto"),
                    staging_bucket=env("STAGING_BUCKET"), r2_endpoint=ep, r2_bucket=env("R2_BUCKET"), r2_key=k, r2_secret=s,
@@ -244,9 +267,9 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
         entradas = queue.entradas_de(rconn, jid)
         bajar_entradas(cfg, entradas, w / "in")
         n = len(entradas)
-        rw_user, rw_pw = tenancy.rol_rw(jid), tenancy.password(cfg.secrets.rw, "rw", jid)
-        env_pg = {"R2_ENDPOINT": cfg.r2_endpoint, "R2_BUCKET": cfg.r2_bucket, "R2_ACCESS_KEY_ID": cfg.r2_key, "R2_SECRET_ACCESS_KEY": cfg.r2_secret,
-                  "PG_HOST": cfg.pg_host, "PG_PORT": cfg.pg_port, "PG_DB": cfg.pg_db, "PG_USER": rw_user, "PG_PASSWORD": rw_pw}
+        dst = cfg.destino_de(job)
+        env_pg = {"R2_ENDPOINT": cfg.r2_endpoint, "R2_BUCKET": dst.r2_bucket, "R2_ACCESS_KEY_ID": cfg.r2_key, "R2_SECRET_ACCESS_KEY": cfg.r2_secret,
+                  "PG_HOST": dst.pg_host, "PG_PORT": dst.pg_port, "PG_DB": dst.pg_db, "PG_USER": dst.pg_user, "PG_PASSWORD": dst.pg_password}
 
         def publicar(lote: Path) -> tuple[int, int]:
             """El pipeline escribe con el rol del job, con `search_path` fijo a su schema (D4)."""
@@ -259,7 +282,7 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
             return int(m[1]), int(m[2])
 
         def tras_lote() -> None:
-            with psycopg.connect(host=cfg.pg_host, port=cfg.pg_port, dbname=cfg.pg_db, user=rw_user, password=rw_pw, autocommit=True, row_factory=dict_row) as rw:
+            with psycopg.connect(host=dst.pg_host, port=dst.pg_port, dbname=dst.pg_db, user=dst.pg_user, password=dst.pg_password, autocommit=True, row_factory=dict_row) as rw:
                 verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao))
                 # El selector de días del viewer se ancla a last_seen_at; sin esto un job histórico sale vacío.
                 rw.execute("UPDATE radars SET last_seen_at = %s", (job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"),))
