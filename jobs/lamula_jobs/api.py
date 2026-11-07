@@ -107,6 +107,7 @@ def create_app(dsn: str | None = None, secrets: Secrets | None = None, migracion
         with _conn() as c:
             filas = c.execute("SELECT caso, vol_from, vol_to, n_volumes FROM control.jobs WHERE destino = 'casos' AND state = 'ready'").fetchall()
         return [{"id": f["caso"], "titulo": catalogo.CASOS[f["caso"]][0], "icao": catalogo.CASOS[f["caso"]][1],
+                "site_id": catalogo.CASOS[f["caso"]][1][1:],  # id de 3 letras del pipeline y del viewer (worker.py: icao[1:])
                  "desde": f["vol_from"].isoformat(), "hasta": f["vol_to"].isoformat(), "n_volumes": f["n_volumes"]}
                 for f in filas if f["caso"] in catalogo.CASOS]
 

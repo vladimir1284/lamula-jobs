@@ -67,6 +67,10 @@ Opciones identificadas, para cuando haya respuesta:
   visor, no. Hasta F4 nadie ajeno al equipo abre un enlace, así que el riesgo es nulo; **debe estar
   puesto antes de que entre el primer tercero** (puerta de F4).
 
+  **Hecho el 2026-11-06:** el visor lleva una etiqueta fija («Reproducción propia… No son productos oficiales del NWS»)
+  con `NUXT_PUBLIC_DEMO_JOB=true`, que hay que poner en las instancias de jobs y de casos. Comprobada con capturas en
+  escritorio y móvil; no probada con datos reales ni con la línea de tiempo cargada.
+
 Nada de esto bloquea F0 ni F1, que corren en nuestra máquina y para nuestro desarrollo. Bloquea
 F4, que es cuando entra el primer tercero.
 

@@ -105,7 +105,7 @@ def test_casos_publicos_solo_los_ya_procesados(api_conn, admin, fuente, basedato
         r = cli.get("/v1/public/cases")  # sin cabecera de token
         assert r.status_code == 200
         (c,) = r.json()
-        assert (c["id"], c["titulo"], c["icao"], c["n_volumes"]) == ("irma", "Irma", "KAMX", 2)
+        assert (c["id"], c["titulo"], c["icao"], c["site_id"], c["n_volumes"]) == ("irma", "Irma", "KAMX", "AMX", 2)
         assert c["desde"].startswith("2017-09-10T17:00") and "result_token" not in c
     finally:
         admin.execute("UPDATE control.jobs SET state='failed' WHERE id=%s", (j["id"],))
