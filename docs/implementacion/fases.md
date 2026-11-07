@@ -105,8 +105,10 @@ huracanes conocidos, página pública con el formulario de solicitud y Turnstile
 pública (D18). Selector `/demo` en el viewer (rama `f3-demo-jobs`).
 **D19 (2026-11-06):** los casos preparados se procesan una vez, sin token, en base y bucket aparte; hecho el backend
 (`destino='casos'`, `jobs-admin caso`, worker por destino). Hecho el etiquetado "no oficial" del visor (`NUXT_PUBLIC_DEMO_JOB=true`). Hecho el backend de solicitudes con aprobación por correo (D20). Hecho el formulario en `/demo` del viewer. Falta desplegar la instancia del viewer de casos y operar D20
-(Brevo, subdominio, Turnstile). La descarga de D18 aún no se ha corrido con el ORPG
-real: la prueba del 2026-11-06 se cortó porque la máquina se quedó sin internet.
+(Brevo, subdominio, Turnstile). **D18 probada con el ORPG real (2026-11-07):** 2 volúmenes de KAMX (2017-09-10 15:04 y 15:11 UTC) bajados del bucket
+público de Unidata dentro del worker, `ready` en 966 s (16 min), primer lote a los 92 s. En la base: `radars` con
+`AMX` en 25,611 / -80,413 (las coordenadas reales de KAMX), 6 rasters (N0B ×2, N0G ×2, DVL ×1, EET ×1), 7 productos y 72
+fenómenos; `jobs-admin orphans` limpio. No probado: un caso preparado (D19), que necesita `lamula_casos`.
 
 **Puerta:** alguien ajeno al equipo completa el camino entero sin ayuda: pide acceso, recibe
 token, lanza un caso preparado y abre el resultado.
