@@ -257,3 +257,8 @@ El token lo emite una persona, pero sin pasar por la terminal.
 - **Exposición.** `PUBLIC_BASE_URL` (propuesta: `jobs.ladetec.com`) tiene que ser alcanzable desde fuera. Rutas
   que deben salir: `/v1/public/*` y `/v1/requests/*`. El resto (`/v1/jobs`, `/v1/results`, catálogo) debería
   seguir interno detrás del viewer.
+- **Dónde se verifica Turnstile.** Solo en `jobs-api`: un token de Turnstile se puede comprobar una vez, así que el
+  viewer (`POST /api/demo/request`) reenvía el token sin comprobarlo. El widget necesita `NUXT_PUBLIC_TURNSTILE_SITE_KEY`
+  en el viewer y `TURNSTILE_SECRET` en `jobs-api`.
+- **Decidido el 2026-11-07:** todo corre en Docker Swarm y `jobs-api` sale a internet filtrando por ruta
+  (solo `/v1/public/*` y `/v1/requests/*`). La regla de filtrado depende del proxy del Swarm y no está escrita.
