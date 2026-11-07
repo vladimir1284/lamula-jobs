@@ -77,8 +77,8 @@ F4, que es cuando entra el primer tercero.
 ## Decisiones que faltan
 
 - Dominio del viewer demo y del hostname del bucket.
-- Texto y campos exactos del formulario de solicitud de acceso. Hay un borrador completo en
-  [Acceso y cuotas](../operacion/acceso-y-cuotas.md), pendiente de aprobar o cambiar.
+- ~~Texto y campos del formulario~~: aprobado el 2026-11-07 ([Acceso y cuotas](../operacion/acceso-y-cuotas.md)).
+- Operar D20: cuenta SMTP de Brevo y remitente verificado, `jobs.ladetec.com` en Cloudflare apuntando a `jobs-api` (solo `/v1/public/*` y `/v1/requests/*`), secreto de Turnstile.
 - Si el enlace de resultado caduca a la vez que el job o sobrevive un tiempo en solo lectura.
 
 ### Umbral de huecos — con datos, falta decidir

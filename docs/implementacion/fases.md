@@ -104,8 +104,8 @@ huracanes conocidos, página pública con el formulario de solicitud y Turnstile
 **Estado (2026-11-06):** hecho el catálogo de `jobs-api` (`/v1/catalog/*`: sitios, volúmenes, casos) y el alta desde la fuente
 pública (D18). Selector `/demo` en el viewer (rama `f3-demo-jobs`).
 **D19 (2026-11-06):** los casos preparados se procesan una vez, sin token, en base y bucket aparte; hecho el backend
-(`destino='casos'`, `jobs-admin caso`, worker por destino). Hecho el etiquetado "no oficial" del visor (`NUXT_PUBLIC_DEMO_JOB=true`). Falta desplegar la instancia del viewer de casos y la página con
-formulario y Turnstile. La descarga de D18 aún no se ha corrido con el ORPG
+(`destino='casos'`, `jobs-admin caso`, worker por destino). Hecho el etiquetado "no oficial" del visor (`NUXT_PUBLIC_DEMO_JOB=true`). Hecho el backend de solicitudes con aprobación por correo (D20). Falta desplegar la instancia del viewer de casos y la página
+del formulario en el viewer (el backend ya valida Turnstile). La descarga de D18 aún no se ha corrido con el ORPG
 real: la prueba del 2026-11-06 se cortó porque la máquina se quedó sin internet.
 
 **Puerta:** alguien ajeno al equipo completa el camino entero sin ayuda: pide acceso, recibe

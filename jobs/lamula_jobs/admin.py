@@ -12,7 +12,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import sweep
+from . import solicitudes, sweep
 from .config import Secrets, env
 from .db import conectar, migrar
 from .ids import nuevo_token_acceso, sha256, ulid
@@ -56,6 +56,13 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("job_id")
     k = sub.add_parser("caso", help="procesa un caso preparado, una vez: sin caducidad, en la base y el bucket de casos (D19)")
     k.add_argument("nombre", help="id del caso (GET /v1/catalog/cases)")
+    sub.add_parser("requests", help="solicitudes de acceso pendientes")
+    a = sub.add_parser("approve", help="aprueba una solicitud: emite el token y se lo envía al solicitante")
+    a.add_argument("request_id")
+    a.add_argument("--tier", default="demo")
+    rj = sub.add_parser("reject", help="rechaza una solicitud")
+    rj.add_argument("request_id")
+    rj.add_argument("--avisar", action="store_true", help="enviar un correo de cortesía al solicitante")
     sub.add_parser("orphans", help="schemas y roles job_* sin job vigente; sale con 1 si hay alguno")
     args = ap.parse_args(argv)
     conn = conectar(env("JOBS_ADMIN_DSN"))
@@ -112,6 +119,23 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             raise
         print(json.dumps({"id": j["id"], "state": j["state"], "caso": j["caso"], "n_volumes": j["n_volumes"]}, default=str))
+    elif args.orden == "requests":
+        print(json.dumps(solicitudes.pendientes(conn), default=str, indent=1))
+    elif args.orden in ("approve", "reject"):
+        from .mail import EnvioFallido, Mailer
+        try:
+            if args.orden == "approve":
+                tid = solicitudes.aprobar(conn, args.request_id, tier=args.tier, mailer=Mailer.from_env(), demo_url=env("DEMO_URL"))
+                print(f"aprobada; token {tid} enviado")
+            else:
+                solicitudes.rechazar(conn, args.request_id, avisar=args.avisar, mailer=Mailer.from_env())
+                print("rechazada")
+        except (solicitudes.NoResoluble, solicitudes.SolicitudInvalida) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        except EnvioFallido as exc:
+            print(f"no se pudo enviar el correo; no se hizo nada: {exc}", file=sys.stderr)
+            return 1
     elif args.orden == "orphans":
         h = sweep.huerfanos(conn)
         print(json.dumps(h))

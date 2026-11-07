@@ -234,3 +234,26 @@ a una columna `permanente` en la base de los jobs.
 Pendiente de operar, no de código: crear `lamula_casos`, aplicar las migraciones del pipeline, crear sus dos
 roles y el bucket, y poner `CASOS_*` en el worker. Un caso que falle a mitad deja filas parciales en
 `lamula_casos` (el pipeline hace upsert, así que repetirlo converge, pero no se ha probado).
+
+## D20 — Solicitudes de acceso: el dueño aprueba por correo (2026-11-07)
+
+El token lo emite una persona, pero sin pasar por la terminal.
+
+- **Flujo.** El formulario público guarda una solicitud (`control.access_requests`, migración 0004) y manda un
+  correo al dueño con un enlace de revisión. El enlace **no actúa al abrirse**: muestra la solicitud y dos
+  formularios POST (aprobar con nivel, rechazar). Un GET que aprobase lo harían solos los antivirus y
+  previsualizadores de correo.
+- **Enlace.** Aleatorio, de un solo uso, caduca a los 7 días, guardado solo como `sha256`.
+- **Aprobar** emite el token y lo envía al solicitante en la misma transacción: si el SMTP falla, no queda token y
+  la solicitud sigue pendiente. Solo se conceden `demo`, `extendido` y `evaluacion`; `interno` y `casos` no.
+- **Rechazar** no emite nada; el aviso al solicitante es opcional.
+- **Abuso.** Turnstile (cerrado por defecto: sin `TURNSTILE_SECRET` el endpoint responde 503), una solicitud
+  pendiente por correo (la repetición recibe la misma respuesta, sin segundo aviso) y 5 por IP al día.
+- **Salida de emergencia.** `jobs-admin requests | approve <id> --tier | reject <id> [--avisar]`.
+- **Correo.** SMTP genérico por entorno (Brevo): `SMTP_HOST/PORT/USER/PASSWORD`, `MAIL_FROM`, `ADMIN_EMAIL`,
+  `PUBLIC_BASE_URL`, `DEMO_URL`. `SMTP_HOST=console` vuelca a stderr (solo desarrollo).
+- **Riesgo aceptado.** Quien controle el correo del dueño controla las aprobaciones. Con cuotas de demo es
+  tolerable.
+- **Exposición.** `PUBLIC_BASE_URL` (propuesta: `jobs.ladetec.com`) tiene que ser alcanzable desde fuera. Rutas
+  que deben salir: `/v1/public/*` y `/v1/requests/*`. El resto (`/v1/jobs`, `/v1/results`, catálogo) debería
+  seguir interno detrás del viewer.

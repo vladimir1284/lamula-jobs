@@ -7,15 +7,19 @@ decena de prospectos) no justifica un pool, y así un fallo de Postgres no deja 
 from __future__ import annotations
 
 import hmac
+import html
 import os
+import urllib.parse
 from contextlib import contextmanager
 from pathlib import Path
 
 import psycopg
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from . import catalogo, queue, service, tenancy
+from . import catalogo, queue, service, solicitudes, tenancy
+from .mail import EnvioFallido, Mailer
 from .config import Secrets, env
 from .db import conectar
 from .ids import token_resultado
@@ -42,8 +46,19 @@ def _publico(j: dict, secrets: Secrets) -> dict:
     }
 
 
+class SolicitudIn(BaseModel):
+    email: str = Field(max_length=320)
+    org: str = Field(max_length=200)
+    cargo: str | None = Field(default=None, max_length=120)
+    interes: list[str] = Field(max_length=4)
+    radar: str | None = Field(default=None, max_length=120)
+    comentario: str | None = Field(default=None, max_length=2000)
+    acepta_aviso: bool
+    turnstile: str = Field(max_length=2048)
+
+
 def create_app(dsn: str | None = None, secrets: Secrets | None = None, migraciones: Path | None = None,
-               internal_key: str | None = None, s3_catalogo=None) -> FastAPI:
+               internal_key: str | None = None, s3_catalogo=None, mailer: Mailer | None = None, verificar_turnstile=None) -> FastAPI:
     dsn = dsn or env("JOBS_API_DSN")
     secrets = secrets or Secrets.from_env()
     migraciones = migraciones or Path(env("PIPELINE_MIGRATIONS"))
@@ -110,6 +125,110 @@ def create_app(dsn: str | None = None, secrets: Secrets | None = None, migracion
                 "site_id": catalogo.CASOS[f["caso"]][1][1:],  # id de 3 letras del pipeline y del viewer (worker.py: icao[1:])
                  "desde": f["vol_from"].isoformat(), "hasta": f["vol_to"].isoformat(), "n_volumes": f["n_volumes"]}
                 for f in filas if f["caso"] in catalogo.CASOS]
+
+    def _mailer() -> Mailer:
+        nonlocal mailer
+        if mailer is None:
+            mailer = Mailer.from_env()
+        return mailer
+
+    def _turnstile(tk: str, ip: str | None) -> bool:
+        if verificar_turnstile is not None:
+            return verificar_turnstile(tk, ip)
+        import json as _json
+        import urllib.request
+        secreto = os.environ.get("TURNSTILE_SECRET")
+        if not secreto:
+            raise HTTPException(503, "el formulario no está configurado")  # cerrado por defecto: sin secreto no se acepta nada
+        datos = urllib.parse.urlencode({"secret": secreto, "response": tk, **({"remoteip": ip} if ip else {})}).encode()
+        try:
+            with urllib.request.urlopen("https://challenges.cloudflare.com/turnstile/v0/siteverify", datos, timeout=10) as r:
+                return bool(_json.load(r).get("success"))
+        except Exception:
+            raise HTTPException(502, "no se pudo verificar el captcha")
+
+    def _ip(req: Request) -> str | None:
+        return req.headers.get("cf-connecting-ip") or (req.client.host if req.client else None)
+
+    @app.post("/v1/public/requests", status_code=202)
+    def solicitar(body: SolicitudIn, req: Request) -> dict:
+        """Formulario público. Misma respuesta si el correo ya tenía una pendiente, para no revelarlo."""
+        ip = _ip(req)
+        if not body.acepta_aviso:
+            raise HTTPException(422, "hay que aceptar el aviso de uso")
+        if not _turnstile(body.turnstile, ip):
+            raise HTTPException(403, "captcha no válido")
+        with _conn() as c:
+            try:
+                rid, enlace = solicitudes.crear(c, email=body.email, org=body.org, cargo=body.cargo, interes=body.interes,
+                                                radar=body.radar, comentario=body.comentario, ip=ip)
+            except solicitudes.SolicitudInvalida as exc:
+                raise HTTPException(422, str(exc))
+            except solicitudes.Demasiadas as exc:
+                if "pendiente" in str(exc):
+                    return {"recibida": True}
+                raise HTTPException(429, str(exc))
+            solicitudes.avisar_al_dueno(c, _mailer(), rid=rid, enlace=enlace, admin_email=env("ADMIN_EMAIL"), base_url=env("PUBLIC_BASE_URL"))
+        return {"recibida": True}
+
+    def _pagina(titulo: str, cuerpo: str, status: int = 200) -> HTMLResponse:
+        h = (f'<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+             f'<meta name="robots" content="noindex"><title>{html.escape(titulo)}</title>'
+             f'<body style="font:16px system-ui;max-width:34rem;margin:2rem auto;padding:0 1rem"><h1 style="font-size:1.3rem">{html.escape(titulo)}</h1>{cuerpo}')
+        return HTMLResponse(h, status, headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
+
+    def _revision(enlace: str) -> dict:
+        with _conn() as c:
+            try:
+                return solicitudes.por_enlace(c, enlace)
+            except solicitudes.NoResoluble:
+                raise HTTPException(410, "este enlace ya no vale: la solicitud está resuelta o caducó")
+
+    @app.get("/v1/requests/{enlace}/review", response_class=HTMLResponse)
+    def revisar(enlace: str) -> HTMLResponse:
+        # GET solo muestra: los antivirus y previsualizadores abren enlaces, y no pueden aprobar nada.
+        s = _revision(enlace)
+        e = html.escape
+        niveles = "".join(f'<option value="{n}">{n}</option>' for n in solicitudes.NIVELES_A_TERCEROS)
+        cuerpo = (f"<p><b>{e(s['email'])}</b><br>{e(s['org'])} · {e(s['cargo'] or '-')}</p>"
+                  f"<p>Quiere ver: {e(', '.join(s['interes']))}<br>Radar o zona: {e(s['radar'] or '-')}</p>"
+                  f"<p style='white-space:pre-wrap'>{e(s['comentario'] or '')}</p>"
+                  f"<form method='post' action='/v1/requests/{e(enlace)}/approve'><label>Nivel <select name='tier'>{niveles}</select></label> "
+                  f"<button>Aprobar y enviar el token</button></form><hr>"
+                  f"<form method='post' action='/v1/requests/{e(enlace)}/reject'><label><input type='checkbox' name='avisar' value='1'> avisar al solicitante</label> "
+                  f"<button>Rechazar</button></form>")
+        return _pagina("Solicitud de acceso", cuerpo)
+
+    async def _form(req: Request) -> dict[str, str]:
+        return {k: v[0] for k, v in urllib.parse.parse_qs((await req.body()).decode(errors="replace")).items()}
+
+    @app.post("/v1/requests/{enlace}/approve", response_class=HTMLResponse)
+    async def aprobar(enlace: str, req: Request) -> HTMLResponse:
+        s = _revision(enlace)
+        tier = (await _form(req)).get("tier", "demo")
+        with _conn() as c:
+            try:
+                solicitudes.aprobar(c, s["id"], tier=tier, mailer=_mailer(), demo_url=env("DEMO_URL"))
+            except solicitudes.SolicitudInvalida as exc:
+                raise HTTPException(422, str(exc))
+            except solicitudes.NoResoluble:
+                raise HTTPException(410, "ya está resuelta")
+            except EnvioFallido as exc:
+                return _pagina("No se pudo enviar el correo", f"<p>No se emitió ningún token y la solicitud sigue pendiente. Reintenta.</p><p>{html.escape(str(exc))}</p>", 502)
+        return _pagina("Aprobada", f"<p>Token de nivel {html.escape(tier)} enviado a {html.escape(s['email'])}.</p>")
+
+    @app.post("/v1/requests/{enlace}/reject", response_class=HTMLResponse)
+    async def rechazar(enlace: str, req: Request) -> HTMLResponse:
+        s = _revision(enlace)
+        avisar = (await _form(req)).get("avisar") == "1"
+        with _conn() as c:
+            try:
+                solicitudes.rechazar(c, s["id"], avisar=avisar, mailer=_mailer())
+            except solicitudes.NoResoluble:
+                raise HTTPException(410, "ya está resuelta")
+            except EnvioFallido as exc:
+                return _pagina("No se pudo enviar el aviso", f"<p>La solicitud sigue pendiente.</p><p>{html.escape(str(exc))}</p>", 502)
+        return _pagina("Rechazada", "<p>Hecho.</p>")
 
     @app.get("/healthz")
     def healthz() -> dict:

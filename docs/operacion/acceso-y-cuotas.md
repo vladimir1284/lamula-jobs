@@ -9,17 +9,17 @@ la petición lo justifica.
 
 1. La página pública explica el demo y muestra un formulario corto: correo, organización, qué
    quiere ver. Protegido con Turnstile.
-2. Llega el correo. Lo valoramos.
-3. Emitimos el token: `jobs-admin issue --email <correo> --tier <nivel> --note "<contexto>"`.
-   El token se muestra **una sola vez**; en la base queda solo su `sha256`.
-4. Se lo mandamos por correo con el enlace del demo. El cliente lo pega una vez y el navegador
+2. Llega un correo al dueño con la solicitud y un enlace de revisión (D20): aprobar con nivel, o rechazar.
+3. Al aprobar se emite el token (también posible a mano: `jobs-admin approve <id> --tier <nivel>`). El token
+   se muestra **una sola vez**; en la base queda solo su `sha256`.
+4. Se envía solo al solicitante por correo, con el enlace del demo. El cliente lo pega una vez y el navegador
    lo guarda.
 
 No hay contraseña, no hay recuperación: si lo pierde, emitimos otro y revocamos el viejo.
 
-## Formulario de solicitud (propuesta, sin aprobar)
+## Formulario de solicitud (aprobado el 2026-11-07)
 
-Pendiente de que el dueño del producto lo apruebe o lo cambie. Criterio con el que está
+Aprobado tal cual por el dueño del producto. La aprobación de cada solicitud se hace por correo (D20). Criterio con el que está
 escrito: pedir lo mínimo para decidir un nivel de token, y que el prospecto tarde menos de un
 minuto. Cada campo de más es una solicitud menos.
 
