@@ -108,7 +108,7 @@ pública (D18). Selector `/demo` en el viewer (rama `f3-demo-jobs`).
 (Brevo, subdominio, Turnstile). **D18 probada con el ORPG real (2026-11-07):** 2 volúmenes de KAMX (2017-09-10 15:04 y 15:11 UTC) bajados del bucket
 público de Unidata dentro del worker, `ready` en 966 s (16 min), primer lote a los 92 s. En la base: `radars` con
 `AMX` en 25,611 / -80,413 (las coordenadas reales de KAMX), 6 rasters (N0B ×2, N0G ×2, DVL ×1, EET ×1), 7 productos y 72
-fenómenos; `jobs-admin orphans` limpio. No probado: un caso preparado (D19), que necesita `lamula_casos`.
+fenómenos; `jobs-admin orphans` limpio. **D19 probada con el ORPG real (2026-11-07):** el caso Harvey (KHGX, 17 volúmenes) en una `lamula_casos` y un bucket de casos locales, `ready` en 91 min, `expires_at` nulo; `radars` HGX 29,472 / -95,079, 99 rasters (12:04:16 a 13:29:17), 9 productos, 1555 fenómenos; 99 objetos en el bucket de casos y ninguno nuevo en el de jobs normales; `GET /v1/public/cases` lo lista sin token. Un caso fallido no bloquea repetirlo. No probado: que un caso parcialmente fallido converja al repetirlo, ni el viewer sobre `lamula_casos`. Antes de desplegar hay que reconstruir `job-runner` con el código actual: la imagen de pruebas llevaba código anterior a D19.
 
 **Puerta:** alguien ajeno al equipo completa el camino entero sin ayuda: pide acceso, recibe
 token, lanza un caso preparado y abre el resultado.
