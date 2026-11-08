@@ -115,6 +115,7 @@ conoce el tamaño de cada clave.
 |---|---|---|
 | `nexrad-l3-pipeline` | `R2_KEY_PREFIX` opcional en `ingest/storage/keys.py` | pequeño, aditivo |
 | `nexrad-l3-pipeline` | **`height` del producto está en pies y se guarda como metros** (`decoder/level3.py`, `radars.height_m`, y de ahí al peso del mosaico). Error de 178 m en un radar costero y de 4,1 km en ABX. Ver [Contrato con el pipeline](../referencia/contrato-pipeline.md) | pequeño, **con migración de datos** |
+| `nexrad-l3-pipeline` | **`grid_radial` falla con azimuts con jitter** (productos de 2022: 719 bins de 720). Bloquea los casos Ian y Milton. [#11](https://github.com/vladimir1284/nexrad-l3-pipeline/issues/11), 2026-11-08 | pequeño |
 | `nexrad-l3-pipeline` | `site_id` explícito cuando el producto no trae encabezado WMO — `decoder/level3.py:166`, `phenomena/parse.py:236`, `phenomena/vwp.py:68`. Ver [Contrato con el pipeline](../referencia/contrato-pipeline.md) | pequeño, aditivo |
 | `lamula-webviewer` | Credenciales por token de job (`server/dal/index.ts`; `pg.ts` ya cachea por credenciales), línea de tiempo en la ventana del job, pantalla de estado, ocultar viento y rayos en jobs históricos | mediano, aditivo |
 | `lamula-webviewer` | Desalojo del caché de conexiones de `server/dal/pg.ts` y `max` más bajo: hoy no desaloja nunca, y con un rol por job se come el `max_connections` del Postgres compartido. Ver [Aislamiento de datos](../arquitectura/aislamiento-datos.md) | pequeño, aditivo |
