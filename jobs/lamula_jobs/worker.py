@@ -106,9 +106,15 @@ def coordenadas_esperadas(dat: Path, icao: str) -> tuple[float, float]:
     raise JobFallido(f"{icao} no está en {dat.name}: no se puede verificar la georreferenciación")
 
 
-def verificar_coordenadas(rw: psycopg.Connection, icao: str, esperadas: tuple[float, float]) -> None:
-    """Regla del repo: el `site_id` y el lat/lon que acaban en `radars` tienen que ser los del job."""
-    filas = rw.execute("SELECT site_id, icao, lat, lon FROM radars").fetchall()
+def verificar_coordenadas(rw: psycopg.Connection, icao: str, esperadas: tuple[float, float], compartida: bool = False) -> None:
+    """Regla del repo: el `site_id` y el lat/lon que acaban en `radars` tienen que ser los del job.
+
+    En el schema de un job `radars` tiene que tener una sola fila. La base de casos (D19) es compartida por
+    cinco radares: ahí se mira solo la fila del sitio del job, y que falte también es un fallo."""
+    if compartida:
+        filas = rw.execute("SELECT site_id, icao, lat, lon FROM radars WHERE site_id = %s", (icao[1:],)).fetchall()
+    else:
+        filas = rw.execute("SELECT site_id, icao, lat, lon FROM radars").fetchall()
     if len(filas) != 1:
         raise JobFallido(f"radars debería tener 1 fila y tiene {len(filas)}: {[f['site_id'] for f in filas]}")
     f = filas[0]
@@ -283,9 +289,10 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
 
         def tras_lote() -> None:
             with psycopg.connect(host=dst.pg_host, port=dst.pg_port, dbname=dst.pg_db, user=dst.pg_user, password=dst.pg_password, autocommit=True, row_factory=dict_row) as rw:
-                verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao))
+                compartida = job.get("destino") == "casos"
+                verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao), compartida)
                 # El selector de días del viewer se ancla a last_seen_at; sin esto un job histórico sale vacío.
-                rw.execute("UPDATE radars SET last_seen_at = %s", (job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"),))
+                rw.execute("UPDATE radars SET last_seen_at = %s WHERE site_id = %s", (job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"), icao[1:]))
 
         pub = Publicador(w / "prod", w, publicar, tras_lote, cancelado=lambda: vig.cancelar)
         rc = _correr([*cfg.runner_cmd, "orpg", "--icao", icao, "--entradas", str(w / "in"), "--salida", str(w / "prod"),

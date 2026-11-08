@@ -61,6 +61,17 @@ def test_verificar_rechaza_mas_de_un_radar_o_ninguno(rw):
         worker.verificar_coordenadas(rw, "KAMX", (25.611, -80.413))
 
 
+def test_verificar_en_base_compartida_mira_solo_el_sitio_del_job(rw):
+    radar(rw, "HGX", 29.472, -95.079)
+    radar(rw, "AMX", 25.611, -80.413)
+    worker.verificar_coordenadas(rw, "KAMX", (25.611, -80.413), compartida=True)
+    with pytest.raises(worker.JobFallido, match="1 fila"):
+        worker.verificar_coordenadas(rw, "KEVX", (30.565, -85.921), compartida=True)  # su fila no existe
+    radar(rw, "EVX", 25.0, -80.0)
+    with pytest.raises(worker.JobFallido, match="change_radar no surtió efecto"):
+        worker.verificar_coordenadas(rw, "KEVX", (30.565, -85.921), compartida=True)
+
+
 def test_bajar_entradas_falla_limpio_si_falta_una_clave(almacen, tmp_path):
     class Cfg:
         s3, staging_bucket = almacen.s3, "staging"
