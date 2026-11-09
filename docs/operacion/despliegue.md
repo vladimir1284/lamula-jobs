@@ -38,9 +38,8 @@ Los nombres de host `demo.ladetec.com` y `casos.ladetec.com` son propuesta mía:
 - **La imagen base del ORPG**, `orpg-prod:b24`, en la máquina donde se construye el runner. No se toca su build.
 - **Los repos hermanos** en la misma carpeta: `nexrad-l3-pipeline` en `main` con los commits `534d75f` y `ad8814c`
   (corrige [#11](https://github.com/vladimir1284/nexrad-l3-pipeline/issues/11)) o posteriores, y `lamula-webviewer`.
-- **El visor, con el plano demo.** Hoy ese código está en la rama `f3-demo-jobs` (PR #19, **sin fusionar**). La imagen
-  `VIEWER_TAG` tiene que construirse desde esa rama o desde `main` después de fusionarla; con el `main` actual el
-  visor no entiende `/j/<token>`, `/demo` ni `NUXT_PUBLIC_CASOS_ONLY`.
+- **El visor, con el plano demo.** El PR #19 de `lamula-webviewer` ya está fusionado en `main` (`c7881ab`, 2026-11-09): la
+  imagen `VIEWER_TAG` se construye desde `main`. Probado: esa imagen arranca y sirve los radares de `lamula_casos` con `casos_ro`.
 - **Redes `traefik-public` y `postgres-public`** (las de la infraestructura existente) y Traefik con
   `certresolver` o con el certificado de origen de Cloudflare para los tres hostnames nuevos.
 - **Un nodo para el worker**, con etiqueta: `docker node update --label-add jobs-worker=true <nodo>`.
@@ -69,8 +68,10 @@ docker build -f jobs/Dockerfile --build-context pipeline=../nexrad-l3-pipeline \
 docker build -f job-runner/Dockerfile --build-context pipeline=../nexrad-l3-pipeline \
   -t $REG/job-runner:$TAG .
 
-( cd ../lamula-webviewer && git switch f3-demo-jobs \
-  && docker build -t $REG/lamula-webviewer:$TAG . )
+# desde una copia limpia: con `docker build .` en un clon con node_modules, pnpm aborta
+# (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY) porque `COPY . .` mete el node_modules local
+( cd ../lamula-webviewer && git switch main && git pull --ff-only \
+  && git archive HEAD | docker build -t $REG/lamula-webviewer:$TAG - )
 
 docker push $REG/jobs-api:$TAG && docker push $REG/job-runner:$TAG && docker push $REG/lamula-webviewer:$TAG
 ```
@@ -79,6 +80,9 @@ Notas:
 
 - El `Dockerfile` del visor no declara `ARG GIT_SHA`, así que el identificador de build del visor sale como `dev`. Es
   cosmético; arreglarlo es un cambio en `lamula-webviewer`, que esta guía no toca.
+- **Arquitectura.** Las tres imágenes de arriba salen `linux/amd64`. El runner **no puede ser ARM**: la base del ORPG es solo
+  `amd64` (binarios `lnux_x86`), así que `jobs-worker` va en un nodo `amd64`. `jobs-api` y el visor sí podrían ser ARM si algún nodo
+  del Swarm lo es; desde la máquina x86_64 de desarrollo no se logró construirlas para ARM (ver [Pendientes](../alcance/pendientes.md)).
 - Las migraciones del pipeline entran **dentro** de `jobs-api` (`/opt/pipeline/db/pg_migrations`). Si el pipeline añade
   una migración nueva, hay que reconstruir `jobs-api` y `job-runner`: la imagen lleva la copia de cuando se construyó.
 - `docker build` del runner tarda lo que tarde instalar `python3.11` y `uv sync`; la base ya está construida.

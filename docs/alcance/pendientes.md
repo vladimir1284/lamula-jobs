@@ -144,3 +144,16 @@ conoce el tamaño de cada clave.
 - **Credenciales y bucket reales** (R2 demo, base `lamula_demo`): del dueño.
 - **Número de conexiones por job**: el límite del rol de job es 8 (`CONNECTION LIMIT`); con el viewer de
   F3 hay que medirlo junto con la nota de `server/dal/pg.ts`.
+
+## Abiertos tras el ensayo de despliegue (2026-11-09)
+
+- **Imágenes ARM, desde la otra PC.** Esta máquina es `x86_64`. Un `docker buildx build --platform linux/arm64` de `jobs-api` no terminó
+  en 400 s bajo emulación (inconcluso: no se sabe si falla o solo es lento). Hay que construir y subir desde la máquina ARM
+  `jobs-api` y `lamula-webviewer` **si algún nodo del Swarm es ARM**; no consta en ningún sitio qué arquitectura tienen los nodos.
+  El runner (`job-runner`) **no puede ser ARM**: la base del ORPG es solo `amd64`. Hay que fijar `jobs-worker` a un nodo `amd64`
+  (etiqueta `jobs-worker=true` en la pila) y, si el Swarm es mixto, publicar `jobs-api` y el visor como manifiesto multi-arquitectura.
+- **Visor: `docker build .` falla con `node_modules` local.** `COPY . .` copia el `node_modules` del clon y pnpm aborta sin terminal. Se
+  esquiva con `git archive HEAD | docker build -`; arreglarlo es un `.dockerignore` en `lamula-webviewer` (repo ajeno, sin tocar).
+- **Visor: `GIT_SHA`.** El `Dockerfile` no declara `ARG GIT_SHA`; el identificador de build sale `dev`. Cosmético.
+- **Pila y servicios sin probar:** Traefik (filtro de rutas, límite de peticiones), Portainer, Brevo, R2 (política pública, CORS). Ver
+  la tabla final de [Despliegue en Portainer](../operacion/despliegue.md).
