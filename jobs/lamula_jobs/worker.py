@@ -220,6 +220,15 @@ def limpiar_orpg() -> None:
         subprocess.run(["pkill", "-x", n], capture_output=True)
 
 
+def fijar_last_seen(rw, icao: str, fin: str, compartida: bool = False) -> None:
+    """Fija `radars.last_seen_at` del sitio. En base compartida varios casos comparten radar (KTBW: Ian y
+    Milton): gana la fecha más tardía, no la del último caso que corre. ISO-8601 ordena igual como texto."""
+    if compartida:
+        rw.execute("UPDATE radars SET last_seen_at = GREATEST(last_seen_at, %s) WHERE site_id = %s", (fin, icao[1:]))
+    else:
+        rw.execute("UPDATE radars SET last_seen_at = %s WHERE site_id = %s", (fin, icao[1:]))
+
+
 class Publicador:
     """Publica por lotes lo que el runner va dejando en `prod/` mientras el ORPG reproduce (puerta de F3).
 
@@ -292,7 +301,7 @@ def ejecutar(cfg: Cfg, rconn: psycopg.Connection, job: dict) -> str:
                 compartida = job.get("destino") == "casos"
                 verificar_coordenadas(rw, icao, coordenadas_esperadas(cfg.change_radar_dat, icao), compartida)
                 # El selector de días del viewer se ancla a last_seen_at; sin esto un job histórico sale vacío.
-                rw.execute("UPDATE radars SET last_seen_at = %s WHERE site_id = %s", (job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"), icao[1:]))
+                fijar_last_seen(rw, icao, job["vol_to"].strftime("%Y-%m-%dT%H:%M:%S"), compartida)
 
         pub = Publicador(w / "prod", w, publicar, tras_lote, cancelado=lambda: vig.cancelar)
         rc = _correr([*cfg.runner_cmd, "orpg", "--icao", icao, "--entradas", str(w / "in"), "--salida", str(w / "prod"),

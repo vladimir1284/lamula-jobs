@@ -72,6 +72,20 @@ def test_verificar_en_base_compartida_mira_solo_el_sitio_del_job(rw):
         worker.verificar_coordenadas(rw, "KEVX", (30.565, -85.921), compartida=True)
 
 
+def test_last_seen_en_base_compartida_conserva_la_fecha_mas_tardia(rw):
+    radar(rw, "TBW", 27.7, -82.4)
+    radar(rw, "AMX", 25.6, -80.4)
+    rw.execute("UPDATE radars SET last_seen_at = '1970-01-01T00:00:00'")  # valor inicial: anterior a cualquier caso
+    worker.fijar_last_seen(rw, "KTBW", "2024-10-10T00:29:19", compartida=True)  # Milton
+    worker.fijar_last_seen(rw, "KTBW", "2022-09-28T22:54:40", compartida=True)  # Ian, corre después
+    worker.fijar_last_seen(rw, "KAMX", "2017-09-10T18:24:40", compartida=True)
+    vistos = {r["site_id"]: r["last_seen_at"] for r in rw.execute("SELECT site_id, last_seen_at FROM radars").fetchall()}
+    assert vistos["TBW"] == "2024-10-10T00:29:19"
+    assert vistos["AMX"] == "2017-09-10T18:24:40"
+    worker.fijar_last_seen(rw, "KTBW", "2022-09-28T22:54:40")  # base de job: una sola ventana, se pisa
+    assert rw.execute("SELECT last_seen_at FROM radars WHERE site_id='TBW'").fetchone()["last_seen_at"] == "2022-09-28T22:54:40"
+
+
 def test_bajar_entradas_falla_limpio_si_falta_una_clave(almacen, tmp_path):
     class Cfg:
         s3, staging_bucket = almacen.s3, "staging"
