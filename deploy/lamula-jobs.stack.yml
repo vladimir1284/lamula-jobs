@@ -1,0 +1,184 @@
+# Pila de Docker Swarm del demo LAMULA (jobs-api, worker con ORPG, barrido, visores de jobs y de casos).
+# Se despliega desde Portainer: Stacks > Add stack > Repository > ruta `deploy/lamula-jobs.stack.yml`.
+# Las variables ${...} se rellenan en el apartado «Environment variables» de Portainer, NO en git.
+# Guía completa, con el orden de pasos: docs/operacion/despliegue.md
+#
+# Requisitos previos (todo `external`, ya existe en el Swarm o hay que crearlo):
+#   redes   traefik-public, postgres-public     (las de la infraestructura existente)
+#   volumen jobs_worker_data                    (docker volume create jobs_worker_data, en el nodo del worker)
+
+x-jobs-api-env: &jobs-api-env
+  JOBS_RW_SECRET: ${JOBS_RW_SECRET:?falta}
+  JOBS_RO_SECRET: ${JOBS_RO_SECRET:?falta}
+  JOBS_RESULT_SECRET: ${JOBS_RESULT_SECRET:?falta}
+
+services:
+  jobs-api:
+    image: ${REGISTRY:?falta}/jobs-api:${JOBS_TAG:?falta}
+    environment:
+      <<: *jobs-api-env
+      JOBS_INTERNAL_KEY: ${JOBS_INTERNAL_KEY:?falta}
+      JOBS_API_DSN: host=${PG_HOST:?falta} port=${PG_PORT:-5432} dbname=lamula_demo user=jobs_api password=${JOBS_API_DB_PASSWORD:?falta}
+      SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:?falta}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?falta}
+      MAIL_FROM: ${MAIL_FROM:?falta}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?falta}
+      PUBLIC_BASE_URL: https://${JOBS_HOST:?falta}
+      DEMO_URL: https://${DEMO_HOST:?falta}/demo
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:?falta}
+    networks: [traefik-public, postgres-public, jobs-internal]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: on-failure, delay: 5s}
+      resources:
+        limits: {cpus: "1", memory: 512M}
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        # Filtro de rutas (D20): hacia fuera solo el formulario y los enlaces de revisión del dueño.
+        # /v1/jobs, /v1/catalog y /v1/results NO salen: los llaman los visores por jobs-internal.
+        - traefik.http.routers.jobs-api.rule=Host(`${JOBS_HOST}`) && (PathPrefix(`/v1/public/`) || PathPrefix(`/v1/requests/`))
+        - traefik.http.routers.jobs-api.entrypoints=websecure
+        - traefik.http.routers.jobs-api.tls=true
+        - traefik.http.routers.jobs-api.middlewares=jobs-api-limite
+        - traefik.http.middlewares.jobs-api-limite.ratelimit.average=30
+        - traefik.http.middlewares.jobs-api-limite.ratelimit.period=1m
+        - traefik.http.middlewares.jobs-api-limite.ratelimit.burst=20
+        - traefik.http.services.jobs-api.loadbalancer.server.port=8000
+
+  # Barrido (runners muertos, caducidad, borrado) cada 60 s, con el rol jobs_api: sin superusuario.
+  jobs-sweep:
+    image: ${REGISTRY}/jobs-api:${JOBS_TAG}
+    command: ["jobs-admin", "sweep", "--cada", "60"]
+    environment:
+      <<: *jobs-api-env
+      JOBS_ADMIN_DSN: host=${PG_HOST} port=${PG_PORT:-5432} dbname=lamula_demo user=jobs_api password=${JOBS_API_DB_PASSWORD}
+      R2_ENDPOINT: ${R2_ENDPOINT:?falta}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?falta}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?falta}
+      R2_BUCKET: ${R2_BUCKET_DEMO:-lamula-demo-raster}
+      STAGING_BUCKET: ${R2_BUCKET_STAGING:-lamula-demo-staging}
+    networks: [postgres-public]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: any, delay: 10s}
+      resources:
+        limits: {cpus: "0.5", memory: 256M}
+
+  # Alarma de cola cada 5 min. De momento solo escribe en el log: el canal de aviso está sin decidir.
+  jobs-health:
+    image: ${REGISTRY}/jobs-api:${JOBS_TAG}
+    command: ["sh", "-c", "while true; do jobs-admin health || echo \"ALARMA jobs-health $(date -u +%FT%TZ)\"; sleep 300; done"]
+    environment:
+      JOBS_ADMIN_DSN: host=${PG_HOST} port=${PG_PORT:-5432} dbname=lamula_demo user=jobs_api password=${JOBS_API_DB_PASSWORD}
+    networks: [postgres-public]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: any, delay: 10s}
+      resources:
+        limits: {cpus: "0.25", memory: 128M}
+
+  # El runner: ORPG + pipeline + worker. Imagen PRIVADA (licencia): no publicarla ni en un registro abierto.
+  jobs-worker:
+    image: ${REGISTRY}/job-runner:${RUNNER_TAG:?falta}
+    # El ENTRYPOINT heredado del ORPG ignora el CMD: este script lanza el ORPG y el supervisor del worker.
+    entrypoint: ["/usr/local/bin/arrancar.sh"]
+    command: ["--metricas", "/data/metricas.jsonl"]
+    # tcp.conf (enlace 1 de nbtcp) lleva este nombre: tiene que ser el hostname del contenedor.
+    hostname: orpg-job
+    stop_grace_period: 60s
+    environment:
+      <<: *jobs-api-env
+      JOBS_RUNNER_DSN: host=${PG_HOST} port=${PG_PORT:-5432} dbname=lamula_demo user=jobs_runner password=${JOBS_RUNNER_DB_PASSWORD:?falta}
+      PG_HOST: ${PG_HOST}
+      PG_PORT: ${PG_PORT:-5432}
+      PG_DB: lamula_demo
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET: ${R2_BUCKET_DEMO:-lamula-demo-raster}
+      STAGING_BUCKET: ${R2_BUCKET_STAGING:-lamula-demo-staging}
+      PIPELINE_MIGRATIONS: /opt/pipeline/db/pg_migrations
+      # Casos preparados (D19): otra base, otro bucket, rol de escritura propio.
+      CASOS_PG_DB: lamula_casos
+      CASOS_PG_USER: casos_rw
+      CASOS_PG_PASSWORD: ${CASOS_RW_DB_PASSWORD:?falta}
+      CASOS_R2_BUCKET: ${R2_BUCKET_CASOS:-lamula-casos-raster}
+    volumes:
+      - jobs_worker_data:/data
+    networks: [postgres-public]
+    deploy:
+      replicas: 1   # la concurrencia son réplicas, pero cada una necesita su ORPG y su CPU: sube de una en una
+      restart_policy: {condition: any, delay: 10s}
+      update_config: {order: stop-first}   # nunca dos ORPG a la vez sobre el mismo volumen
+      placement:
+        constraints: ["node.labels.jobs-worker == true"]   # docker node update --label-add jobs-worker=true <nodo>
+      resources:
+        limits: {cpus: "2", memory: 3G}
+
+  # Visor de jobs: /demo (formulario), /j/<token> (estado y resultado). Credenciales de BD por job.
+  viewer-jobs:
+    image: ${REGISTRY}/lamula-webviewer:${VIEWER_TAG:?falta}
+    environment:
+      NUXT_JOBS_API_URL: http://jobs-api:8000
+      NUXT_JOBS_INTERNAL_KEY: ${JOBS_INTERNAL_KEY}
+      NUXT_PG_HOST: ${PG_HOST}
+      NUXT_PG_PORT: ${PG_PORT:-5432}
+      NUXT_PG_DATABASE: lamula_demo
+      NUXT_PUBLIC_R2_BASE_URL: https://${R2_PUBLIC_HOST_DEMO:?falta}
+      NUXT_PUBLIC_CASOS_URL: https://${CASOS_HOST:?falta}
+      NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?falta}
+      NUXT_PUBLIC_DEMO_JOB: "true"
+    networks: [traefik-public, postgres-public, jobs-internal]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: on-failure, delay: 5s}
+      resources:
+        limits: {cpus: "1", memory: 768M}
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.viewer-jobs.rule=Host(`${DEMO_HOST}`)
+        - traefik.http.routers.viewer-jobs.entrypoints=websecure
+        - traefik.http.routers.viewer-jobs.tls=true
+        - traefik.http.services.viewer-jobs.loadbalancer.server.port=3000
+
+  # Visor de casos preparados: solo lectura sobre lamula_casos, sin «EN VIVO», sin token.
+  viewer-casos:
+    image: ${REGISTRY}/lamula-webviewer:${VIEWER_TAG}
+    environment:
+      NUXT_PG_HOST: ${PG_HOST}
+      NUXT_PG_PORT: ${PG_PORT:-5432}
+      NUXT_PG_DATABASE: lamula_casos
+      NUXT_PG_USER: casos_ro
+      NUXT_PG_PASSWORD: ${CASOS_RO_DB_PASSWORD:?falta}
+      NUXT_PUBLIC_R2_BASE_URL: https://${R2_PUBLIC_HOST_CASOS:?falta}
+      NUXT_PUBLIC_DEMO_JOB: "true"
+      NUXT_PUBLIC_CASOS_ONLY: "true"
+    networks: [traefik-public, postgres-public]
+    deploy:
+      replicas: 1
+      restart_policy: {condition: on-failure, delay: 5s}
+      resources:
+        limits: {cpus: "1", memory: 768M}
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.viewer-casos.rule=Host(`${CASOS_HOST}`)
+        - traefik.http.routers.viewer-casos.entrypoints=websecure
+        - traefik.http.routers.viewer-casos.tls=true
+        - traefik.http.services.viewer-casos.loadbalancer.server.port=3000
+
+volumes:
+  jobs_worker_data:
+    external: true
+
+networks:
+  traefik-public:
+    external: true
+  postgres-public:
+    external: true
+  jobs-internal:
+    driver: overlay

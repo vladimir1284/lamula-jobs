@@ -56,6 +56,7 @@ nav:
   - Operación:
       - Acceso y cuotas: operacion/acceso-y-cuotas.md
       - Límites y recursos: operacion/limites-recursos.md
+      - Despliegue en Portainer: operacion/despliegue.md
   - Implementación:
       - Fases: implementacion/fases.md
       - F0 en una máquina con Docker: implementacion/f0-ejecucion.md
